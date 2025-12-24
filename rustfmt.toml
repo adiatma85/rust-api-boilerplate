@@ -1,0 +1,3 @@
+# rustfmt.toml
+imports_granularity = "Crate" # Merges imports into one line per crate
+group_imports = "StdExternalCrate" # The magic setting
