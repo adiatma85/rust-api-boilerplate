@@ -1,0 +1,22 @@
+services:
+  mysql:
+    # use this for mac
+    platform: linux/amd64
+    image: mysql:8.0.26
+
+    # use this for linux
+    # platform: linux/x86_64
+    # image: mysql:8.0.26
+
+    # ======================= #
+    restart: on-failure
+    ports:
+      - "3306:3306"
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    container_name: mysql_gemini_axum
+    volumes:
+      - "./storage/mysql/scripts:/docker-entrypoint-initdb.d"
+      - "./storage/mysql/data:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_TCP_PORT: 3306
