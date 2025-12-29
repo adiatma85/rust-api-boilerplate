@@ -22,9 +22,9 @@ use crate::{
     handler::{
         card::{create_card_handler, delete_card_handler, update_card_status_handler},
         user::{create_user_handler, login_handler},
+        util::health_check_handler,
     },
     middleware::auth::auth_middleware,
-    usecase::util::health_check_handler,
 };
 
 const CONFIG_PATH: &str = "./etc/cfg/conf.json";

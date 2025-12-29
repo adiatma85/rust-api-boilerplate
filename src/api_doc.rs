@@ -1,14 +1,18 @@
-use utoipa::OpenApi;
-use utoipa::openapi::security::{Http, HttpAuthScheme, SecurityScheme};
+use utoipa::{
+    OpenApi,
+    openapi::security::{Http, HttpAuthScheme, SecurityScheme},
+};
 
-use crate::handler::card::{CreateCardRequest, UpdateCardStatusRequest};
-use crate::handler::user::{LoginRequest, RegisterRequest};
+use crate::handler::{
+    card::{CreateCardRequest, UpdateCardStatusRequest},
+    user::{LoginRequest, RegisterRequest},
+};
 
 #[derive(OpenApi)]
 #[openapi(
     paths(
         // Util
-        crate::usecase::util::health_check_handler,
+        crate::handler::util::health_check_handler,
 
         // Auth Handler
         crate::handler::user::create_user_handler,
