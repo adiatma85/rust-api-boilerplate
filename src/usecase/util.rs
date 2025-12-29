@@ -2,6 +2,14 @@ use axum::Json;
 
 use crate::entity;
 
+#[utoipa::path(
+    get,
+    path = "/ping",
+    tag = "util",
+    responses(
+        (status = StatusCode::OK, description = "Login successful"),
+    )
+)]
 pub async fn health_check_handler() -> Json<entity::util::PingResponse> {
     const MESSAGE: &str = "Simple REST-API in Rust";
 
