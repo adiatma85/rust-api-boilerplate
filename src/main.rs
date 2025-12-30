@@ -70,10 +70,13 @@ async fn main() {
         // Everything inside this .merge() will run through the middleware
         .merge(
             Router::new()
+                // In here, we have the the routes that protected by the said middleware
                 .route("/cards", post(create_card_handler))
-                .route("/cards/{id}", patch(update_card_status_handler))
+                .route("/cards/{id}/status", patch(update_card_status_handler))
                 .route("/cards/{id}", delete(delete_card_handler))
+                // This is enabling the middleware FROM a function
                 .route_layer(axum_middleware::from_fn_with_state(
+                    // Clone the state because it's an Arc and it's cheap
                     state.clone(),
                     auth_middleware,
                 )),

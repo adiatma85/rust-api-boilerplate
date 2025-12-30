@@ -23,9 +23,9 @@ DROP TABLE IF EXISTS `card`;
 CREATE TABLE IF NOT EXISTS `card` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(255) NOT NULL,
-    `name` VARCHAR(255) NOT NULL,
     `description` VARCHAR(255),
     `card_status` VARCHAR(255),
+    `user_id` INT,
 
     -- Utility columns
     `status` SMALLINT NOT NULL DEFAULT '1',
@@ -37,6 +37,5 @@ CREATE TABLE IF NOT EXISTS `card` (
     `updated_by` VARCHAR(255),
     `deleted_at` TIMESTAMP,
     `deleted_by` VARCHAR(255),
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `email` (`email`)
+    PRIMARY KEY (`id`)
 ) ENGINE = INNODB;

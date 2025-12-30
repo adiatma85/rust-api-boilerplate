@@ -5,7 +5,7 @@ use crate::entity;
 #[utoipa::path(
     get,
     path = "/ping",
-    tag = "util",
+    tag = "Util",
     responses(
         (status = StatusCode::OK, description = "Login successful"),
     )
