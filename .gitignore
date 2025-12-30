@@ -33,3 +33,6 @@ Thumbs.db
 
 # Custom rules
 /etc/cfg/*
+
+# Docker Storage
+/env/storage/*
