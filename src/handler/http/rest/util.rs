@@ -8,7 +8,7 @@ use axum::{
 use crate::{
     entity::response::AppCode,
     // handler::user::RegisterRequest,
-    middleware::context::RequestContext,
+    handler::http::middleware::context::RequestContext,
 };
 
 #[utoipa::path(

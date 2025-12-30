@@ -6,13 +6,15 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
-    handler::{
-        api_doc,
-        card::{create_card_handler, delete_card_handler, update_card_status_handler},
-        user::{create_user_handler, login_handler},
-        util::ping_handler,
+    handler::http::{
+        doc::api_doc,
+        middleware::{auth::auth_middleware, context::context_middleware},
+        rest::{
+            card::{create_card_handler, delete_card_handler, update_card_status_handler},
+            user::{create_user_handler, login_handler},
+            util::ping_handler,
+        },
     },
-    middleware::{auth::auth_middleware, context::context_middleware},
     state::AppState,
 };
 

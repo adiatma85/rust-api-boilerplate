@@ -12,16 +12,16 @@ use crate::entity::{
 #[openapi(
     paths(
         // Util
-        crate::handler::util::ping_handler,
+        crate::handler::http::rest::util::ping_handler,
 
         // Auth Handler
-        crate::handler::user::create_user_handler,
-        crate::handler::user::login_handler,
+        crate::handler::http::rest::user::create_user_handler,
+        crate::handler::http::rest::user::login_handler,
 
         // Card Handler
-        crate::handler::card::create_card_handler,
-        crate::handler::card::update_card_status_handler,
-        crate::handler::card::delete_card_handler
+        crate::handler::http::rest::card::create_card_handler,
+        crate::handler::http::rest::card::update_card_status_handler,
+        crate::handler::http::rest::card::delete_card_handler
     ),
     components(
         schemas(CreateCardRequest, UpdateCardStatusRequest, RegisterRequest, LoginRequest)

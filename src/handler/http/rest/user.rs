@@ -9,7 +9,7 @@ use crate::{
         response::AppCode,
         user::{LoginRequest, LoginResponse, RegisterRequest},
     },
-    middleware::context::RequestContext,
+    handler::http::middleware::context::RequestContext,
     state::AppState,
     usecase::user::CreateUserParams,
 };

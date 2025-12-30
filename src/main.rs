@@ -2,7 +2,6 @@ mod config;
 mod domain;
 mod entity;
 mod handler;
-mod middleware;
 mod state;
 mod usecase;
 
@@ -38,7 +37,7 @@ async fn main() {
     let state = state::AppState::new(db, jwt_secret);
 
     // 4. Build Application with State
-    let app = crate::handler::route::init_route(state);
+    let app = crate::handler::http::rest::route::init_route(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], app_settings.port));
     println!("🚀 Server listening on http://{}", addr);
@@ -46,5 +45,3 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
-
-// Rencana selanjutnya adalah refactoring biar code lebih enak dibaca
