@@ -1,12 +1,15 @@
 use axum::{
+    Extension,
     extract::{Json, State},
-    http::StatusCode,
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{state::AppState, usecase::user::CreateUserParams};
+use crate::{
+    middleware::context::RequestContext, state::AppState, types::response::AppCode,
+    usecase::user::CreateUserParams,
+};
 
 // 1. The Request DTO
 #[derive(Deserialize, ToSchema)]
@@ -40,6 +43,7 @@ pub struct LoginResponse {
 )]
 pub async fn create_user_handler(
     State(state): State<AppState>,
+    Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
     // Map HTTP Request -> Usecase Params
@@ -52,18 +56,14 @@ pub async fn create_user_handler(
     // Call the Usecase (Logic Layer)
     // We use 'state.user_usecase' which is the Arc<UserUsecase> we set up in main.rs
     match state.user_usecase.create_user(params).await {
-        Ok(user_id) => (
-            StatusCode::CREATED,
-            format!("User created with ID: {}", user_id),
+        Ok(user_id) => ctx.success(
+            AppCode::Success,
+            format!("User created successfully with ID {}", user_id),
         ),
-        Err(e) => {
-            // In a real app, you might distinguish between "Duplicate Email" (409)
-            // vs "Database Error" (500) here.
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to create user: {}", e),
-            )
-        }
+        Err(e) => ctx.error(
+            AppCode::InternalServerError,
+            format!("Failed to create user: {}", e),
+        ),
     }
 }
 
@@ -79,6 +79,7 @@ pub async fn create_user_handler(
 )]
 pub async fn login_handler(
     State(state): State<AppState>,
+    Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
     let params = crate::usecase::auth::LoginParams {
@@ -90,11 +91,8 @@ pub async fn login_handler(
     match state.auth_usecase.login(params).await {
         Ok(token) => {
             let resp = LoginResponse { token };
-            (StatusCode::OK, Json(resp)).into_response()
+            ctx.success(AppCode::Success, resp)
         }
-        Err(e) => {
-            // Simple error handling: generic 401 for security
-            (StatusCode::UNAUTHORIZED, e).into_response()
-        }
+        Err(e) => ctx.error(AppCode::Unauthorized, e.to_string()),
     }
 }

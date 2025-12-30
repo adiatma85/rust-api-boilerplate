@@ -3,7 +3,11 @@ lint:
 	cargo clippy -- -D warnings
 
 .PHONY: format
-format: lint
+format:
+	cargo +nightly fmt
+
+.PHONY: format-lint
+format-lint: lint
 	cargo +nightly fmt
 
 .PHONY: check
@@ -17,3 +21,11 @@ clean:
 .PHONY: run
 run:
 	cargo run
+
+.PHONY: sort-install
+sort-install:
+	cargo install cargo-sort@2.0.2
+
+.PHONY: sort
+sort:
+	cargo sort

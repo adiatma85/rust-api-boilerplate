@@ -1,14 +1,15 @@
 use axum::{
     Extension, // Required to get the Auth Token Claims
     extract::{Json, Path, State},
-    http::StatusCode,
     response::IntoResponse,
 };
 use serde::Deserialize;
 use utoipa::ToSchema;
 
 use crate::{
+    middleware::context::RequestContext,
     state::AppState,
+    types::response::AppCode,
     usecase::{
         auth::Claims,
         card::{CreateCardParams, UpdateCardParams},
@@ -46,7 +47,8 @@ pub struct UpdateCardStatusRequest {
 )]
 pub async fn create_card_handler(
     State(state): State<AppState>,
-    Extension(user): Extension<Claims>, // <--- Securely get User ID from Token
+    Extension(user): Extension<Claims>,
+    Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<CreateCardRequest>,
 ) -> impl IntoResponse {
     let params = CreateCardParams {
@@ -56,8 +58,8 @@ pub async fn create_card_handler(
     };
 
     match state.card_usecase.create_card(params).await {
-        Ok(id) => (StatusCode::CREATED, format!("Card created with ID: {}", id)).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e).into_response(),
+        Ok(id) => ctx.success(AppCode::Success, format!("Card created with ID: {}", id)),
+        Err(e) => ctx.error(AppCode::InternalServerError, e),
     }
 }
 
@@ -83,6 +85,7 @@ pub async fn create_card_handler(
 pub async fn update_card_status_handler(
     State(state): State<AppState>,
     Path(id): Path<i32>, // Extract ID from URL (/cards/:id/status)
+    Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<UpdateCardStatusRequest>,
 ) -> impl IntoResponse {
     let params = UpdateCardParams {
@@ -91,14 +94,14 @@ pub async fn update_card_status_handler(
     };
 
     match state.card_usecase.update_card_status(params).await {
-        Ok(_) => (StatusCode::OK, "Card status updated").into_response(),
+        Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
         Err(e) => {
             let status = if e == "Card not found" {
-                StatusCode::NOT_FOUND
+                AppCode::NotFound
             } else {
-                StatusCode::INTERNAL_SERVER_ERROR
+                AppCode::InternalServerError
             };
-            (status, e).into_response()
+            ctx.error(status, e)
         }
     }
 }
@@ -123,16 +126,17 @@ pub async fn update_card_status_handler(
 pub async fn delete_card_handler(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(ctx): Extension<RequestContext>,
 ) -> impl IntoResponse {
     match state.card_usecase.delete_card(id).await {
-        Ok(_) => (StatusCode::OK, "Card deleted successfully").into_response(),
+        Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
         Err(e) => {
             let status = if e == "Card not found" {
-                StatusCode::NOT_FOUND
+                AppCode::NotFound
             } else {
-                StatusCode::INTERNAL_SERVER_ERROR
+                AppCode::InternalServerError
             };
-            (status, e).into_response()
+            ctx.error(status, e)
         }
     }
 }

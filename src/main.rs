@@ -5,6 +5,7 @@ mod entity;
 mod handler;
 mod middleware;
 mod state;
+mod types;
 mod usecase;
 
 use std::net::SocketAddr;
@@ -24,7 +25,7 @@ use crate::{
         user::{create_user_handler, login_handler},
         util::health_check_handler,
     },
-    middleware::auth::auth_middleware,
+    middleware::{auth::auth_middleware, context::context_middleware},
 };
 
 const CONFIG_PATH: &str = "./etc/cfg/conf.json";
@@ -82,6 +83,7 @@ async fn main() {
                 )),
         )
         // Send the state
+        .layer(axum_middleware::from_fn(context_middleware))
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], app_settings.port));

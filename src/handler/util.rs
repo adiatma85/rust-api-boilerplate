@@ -1,6 +1,15 @@
-use axum::Json;
+// use axum::Json;
+use axum::{
+    extract::Extension, // Import Extension
+    response::IntoResponse,
+};
 
-use crate::entity;
+// use crate::state::AppState; // Import our context
+use crate::{
+    // handler::user::RegisterRequest,
+    middleware::context::RequestContext,
+    types::response::AppCode,
+};
 
 #[utoipa::path(
     get,
@@ -10,13 +19,6 @@ use crate::entity;
         (status = StatusCode::OK, description = "Login successful"),
     )
 )]
-pub async fn health_check_handler() -> Json<entity::util::PingResponse> {
-    const MESSAGE: &str = "Simple REST-API in Rust";
-
-    let response = entity::util::PingResponse {
-        message: MESSAGE.to_string(),
-        status: "success".to_string(),
-    };
-
-    Json(response)
+pub async fn health_check_handler(Extension(ctx): Extension<RequestContext>) -> impl IntoResponse {
+    ctx.success(AppCode::Success, "PONG!")
 }
