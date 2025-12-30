@@ -3,7 +3,7 @@ use utoipa::{
     openapi::security::{Http, HttpAuthScheme, SecurityScheme},
 };
 
-use crate::handler::{
+use crate::entity::{
     card::{CreateCardRequest, UpdateCardStatusRequest},
     user::{LoginRequest, RegisterRequest},
 };
@@ -12,16 +12,16 @@ use crate::handler::{
 #[openapi(
     paths(
         // Util
-        crate::handler::util::health_check_handler,
+        crate::handler::http::rest::util::ping_handler,
 
         // Auth Handler
-        crate::handler::user::create_user_handler,
-        crate::handler::user::login_handler,
+        crate::handler::http::rest::user::create_user_handler,
+        crate::handler::http::rest::user::login_handler,
 
         // Card Handler
-        crate::handler::card::create_card_handler,
-        crate::handler::card::update_card_status_handler,
-        crate::handler::card::delete_card_handler
+        crate::handler::http::rest::card::create_card_handler,
+        crate::handler::http::rest::card::update_card_status_handler,
+        crate::handler::http::rest::card::delete_card_handler
     ),
     components(
         schemas(CreateCardRequest, UpdateCardStatusRequest, RegisterRequest, LoginRequest)

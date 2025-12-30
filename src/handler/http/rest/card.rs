@@ -1,13 +1,15 @@
 use axum::{
     Extension, // Required to get the Auth Token Claims
     extract::{Json, Path, State},
-    http::StatusCode,
     response::IntoResponse,
 };
-use serde::Deserialize;
-use utoipa::ToSchema;
 
+use crate::handler::http::middleware::context::RequestContext;
 use crate::{
+    entity::{
+        card::{CreateCardRequest, UpdateCardStatusRequest},
+        response::AppCode,
+    },
     state::AppState,
     usecase::{
         auth::Claims,
@@ -15,24 +17,12 @@ use crate::{
     },
 }; // Import Claims to read the user_id
 
-// --- Request DTOs ---
-#[derive(Deserialize, ToSchema)]
-pub struct CreateCardRequest {
-    pub title: String,
-    pub description: Option<String>,
-}
-
-#[derive(Deserialize, ToSchema)]
-pub struct UpdateCardStatusRequest {
-    pub status: String,
-}
-
 // --- Handlers ---
 
 /// Create a new card
 #[utoipa::path(
     post,
-    path = "/cards",
+    path = "/api/v1/cards",
     tag = "Cards",
     request_body = CreateCardRequest,
     // This line links to the SecuritySchema defined in your main OpenApi struct
@@ -46,7 +36,8 @@ pub struct UpdateCardStatusRequest {
 )]
 pub async fn create_card_handler(
     State(state): State<AppState>,
-    Extension(user): Extension<Claims>, // <--- Securely get User ID from Token
+    Extension(user): Extension<Claims>,
+    Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<CreateCardRequest>,
 ) -> impl IntoResponse {
     let params = CreateCardParams {
@@ -56,15 +47,15 @@ pub async fn create_card_handler(
     };
 
     match state.card_usecase.create_card(params).await {
-        Ok(id) => (StatusCode::CREATED, format!("Card created with ID: {}", id)).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e).into_response(),
+        Ok(id) => ctx.success(AppCode::Success, format!("Card created with ID: {}", id)),
+        Err(e) => ctx.error(AppCode::InternalServerError, e),
     }
 }
 
 /// Update card status
 #[utoipa::path(
     patch, // Using PATCH is standard for partial updates
-    path = "/cards/{id}/status",
+    path = "/api/v1/cards/{id}/status",
     tag = "Cards",
     request_body = UpdateCardStatusRequest,
     // Explicitly document the Path ID variable
@@ -83,6 +74,7 @@ pub async fn create_card_handler(
 pub async fn update_card_status_handler(
     State(state): State<AppState>,
     Path(id): Path<i32>, // Extract ID from URL (/cards/:id/status)
+    Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<UpdateCardStatusRequest>,
 ) -> impl IntoResponse {
     let params = UpdateCardParams {
@@ -91,14 +83,14 @@ pub async fn update_card_status_handler(
     };
 
     match state.card_usecase.update_card_status(params).await {
-        Ok(_) => (StatusCode::OK, "Card status updated").into_response(),
+        Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
         Err(e) => {
             let status = if e == "Card not found" {
-                StatusCode::NOT_FOUND
+                AppCode::NotFound
             } else {
-                StatusCode::INTERNAL_SERVER_ERROR
+                AppCode::InternalServerError
             };
-            (status, e).into_response()
+            ctx.error(status, e)
         }
     }
 }
@@ -106,7 +98,7 @@ pub async fn update_card_status_handler(
 /// Delete a card
 #[utoipa::path(
     delete,
-    path = "/cards/{id}",
+    path = "/api/v1/cards/{id}",
     tag = "Cards",
     params(
         ("id" = i32, Path, description = "The ID of the card to delete")
@@ -123,16 +115,17 @@ pub async fn update_card_status_handler(
 pub async fn delete_card_handler(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(ctx): Extension<RequestContext>,
 ) -> impl IntoResponse {
     match state.card_usecase.delete_card(id).await {
-        Ok(_) => (StatusCode::OK, "Card deleted successfully").into_response(),
+        Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
         Err(e) => {
             let status = if e == "Card not found" {
-                StatusCode::NOT_FOUND
+                AppCode::NotFound
             } else {
-                StatusCode::INTERNAL_SERVER_ERROR
+                AppCode::InternalServerError
             };
-            (status, e).into_response()
+            ctx.error(status, e)
         }
     }
 }
