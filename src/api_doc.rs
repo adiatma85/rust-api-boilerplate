@@ -3,7 +3,7 @@ use utoipa::{
     openapi::security::{Http, HttpAuthScheme, SecurityScheme},
 };
 
-use crate::handler::{
+use crate::entity::{
     card::{CreateCardRequest, UpdateCardStatusRequest},
     user::{LoginRequest, RegisterRequest},
 };

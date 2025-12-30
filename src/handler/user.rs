@@ -3,32 +3,16 @@ use axum::{
     extract::{Json, State},
     response::IntoResponse,
 };
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 use crate::{
-    entity::response::AppCode, middleware::context::RequestContext, state::AppState,
+    entity::{
+        response::AppCode,
+        user::{LoginRequest, LoginResponse, RegisterRequest},
+    },
+    middleware::context::RequestContext,
+    state::AppState,
     usecase::user::CreateUserParams,
 };
-
-// 1. The Request DTO
-#[derive(Deserialize, ToSchema)]
-pub struct RegisterRequest {
-    pub name: String,
-    pub email: String,
-    pub password: String,
-}
-
-#[derive(Deserialize, ToSchema)]
-pub struct LoginRequest {
-    pub email: String,
-    pub password: String,
-}
-
-#[derive(Serialize, ToSchema)]
-pub struct LoginResponse {
-    pub token: String,
-}
 
 // 2. The Handler
 #[utoipa::path(

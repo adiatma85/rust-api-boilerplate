@@ -1,5 +1,8 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+// --- Model for the Database ---
 
 // 1. Define the Table Name
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
@@ -22,3 +25,23 @@ pub enum Relation {}
 // 3. Define ActiveModel
 // This trait enables the "Active Record" behavior (save, delete, etc.)
 impl ActiveModelBehavior for ActiveModel {}
+
+// --- Public structs for the Request and Response (DTO) ---
+
+#[derive(Deserialize, ToSchema)]
+pub struct RegisterRequest {
+    pub name: String,
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct LoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct LoginResponse {
+    pub token: String,
+}

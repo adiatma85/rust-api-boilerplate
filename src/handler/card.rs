@@ -3,11 +3,12 @@ use axum::{
     extract::{Json, Path, State},
     response::IntoResponse,
 };
-use serde::Deserialize;
-use utoipa::ToSchema;
 
 use crate::{
-    entity::response::AppCode,
+    entity::{
+        card::{CreateCardRequest, UpdateCardStatusRequest},
+        response::AppCode,
+    },
     middleware::context::RequestContext,
     state::AppState,
     usecase::{
@@ -15,18 +16,6 @@ use crate::{
         card::{CreateCardParams, UpdateCardParams},
     },
 }; // Import Claims to read the user_id
-
-// --- Request DTOs ---
-#[derive(Deserialize, ToSchema)]
-pub struct CreateCardRequest {
-    pub title: String,
-    pub description: Option<String>,
-}
-
-#[derive(Deserialize, ToSchema)]
-pub struct UpdateCardStatusRequest {
-    pub status: String,
-}
 
 // --- Handlers ---
 

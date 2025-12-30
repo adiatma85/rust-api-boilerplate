@@ -1,5 +1,8 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+// --- Model for the Database ---
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "card")]
@@ -35,3 +38,16 @@ impl Related<super::user::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+// --- Public structs for the Request and Response (DTO) ---
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateCardRequest {
+    pub title: String,
+    pub description: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateCardStatusRequest {
+    pub status: String,
+}
