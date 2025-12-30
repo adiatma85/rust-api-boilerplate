@@ -22,7 +22,7 @@ use crate::{
 /// Create a new card
 #[utoipa::path(
     post,
-    path = "/cards",
+    path = "/api/v1/cards",
     tag = "Cards",
     request_body = CreateCardRequest,
     // This line links to the SecuritySchema defined in your main OpenApi struct
@@ -55,7 +55,7 @@ pub async fn create_card_handler(
 /// Update card status
 #[utoipa::path(
     patch, // Using PATCH is standard for partial updates
-    path = "/cards/{id}/status",
+    path = "/api/v1/cards/{id}/status",
     tag = "Cards",
     request_body = UpdateCardStatusRequest,
     // Explicitly document the Path ID variable
@@ -98,7 +98,7 @@ pub async fn update_card_status_handler(
 /// Delete a card
 #[utoipa::path(
     delete,
-    path = "/cards/{id}",
+    path = "/api/v1/cards/{id}",
     tag = "Cards",
     params(
         ("id" = i32, Path, description = "The ID of the card to delete")

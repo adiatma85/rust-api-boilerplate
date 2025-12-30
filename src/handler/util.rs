@@ -13,12 +13,12 @@ use crate::{
 
 #[utoipa::path(
     get,
-    path = "/ping",
+    path = "/api/v1/ping",
     tag = "Util",
     responses(
         (status = StatusCode::OK, description = "Login successful"),
     )
 )]
-pub async fn health_check_handler(Extension(ctx): Extension<RequestContext>) -> impl IntoResponse {
+pub async fn ping_handler(Extension(ctx): Extension<RequestContext>) -> impl IntoResponse {
     ctx.success(AppCode::Success, "PONG!")
 }

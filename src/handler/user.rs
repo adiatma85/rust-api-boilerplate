@@ -17,7 +17,7 @@ use crate::{
 // 2. The Handler
 #[utoipa::path(
     post,
-    path = "/register",
+    path = "/api/v1/register",
     tag = "Auth",
     request_body = RegisterRequest,
     responses(
@@ -53,7 +53,7 @@ pub async fn create_user_handler(
 
 #[utoipa::path(
     post,
-    path = "/login",
+    path = "/api/v1/login",
     tag = "Auth",
     request_body = LoginRequest,
     responses(

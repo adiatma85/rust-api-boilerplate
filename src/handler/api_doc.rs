@@ -12,7 +12,7 @@ use crate::entity::{
 #[openapi(
     paths(
         // Util
-        crate::handler::util::health_check_handler,
+        crate::handler::util::ping_handler,
 
         // Auth Handler
         crate::handler::user::create_user_handler,
