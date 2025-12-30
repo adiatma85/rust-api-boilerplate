@@ -7,9 +7,9 @@ use serde::Deserialize;
 use utoipa::ToSchema;
 
 use crate::{
+    entity::response::AppCode,
     middleware::context::RequestContext,
     state::AppState,
-    types::response::AppCode,
     usecase::{
         auth::Claims,
         card::{CreateCardParams, UpdateCardParams},

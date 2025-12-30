@@ -5,7 +5,6 @@ mod entity;
 mod handler;
 mod middleware;
 mod state;
-mod types;
 mod usecase;
 
 use std::net::SocketAddr;
@@ -92,3 +91,5 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
+
+// Rencana selanjutnya adalah refactoring biar code lebih enak dibaca

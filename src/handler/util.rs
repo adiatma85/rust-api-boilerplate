@@ -6,9 +6,9 @@ use axum::{
 
 // use crate::state::AppState; // Import our context
 use crate::{
+    entity::response::AppCode,
     // handler::user::RegisterRequest,
     middleware::context::RequestContext,
-    types::response::AppCode,
 };
 
 #[utoipa::path(

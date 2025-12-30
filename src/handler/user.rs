@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{
-    middleware::context::RequestContext, state::AppState, types::response::AppCode,
+    entity::response::AppCode, middleware::context::RequestContext, state::AppState,
     usecase::user::CreateUserParams,
 };
 
