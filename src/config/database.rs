@@ -9,3 +9,13 @@ pub enum DatabaseProvider {
     Postgres,
     Sqlite,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct DatabaseConfig {
+    pub provider: DatabaseProvider,
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub name: String,
+}

@@ -32,14 +32,12 @@ async fn main() {
     println!("✅ Database connected successfully");
 
     // 3. Create the State
-    // Ideally, get this from AppSettings too!
-    let jwt_secret = "super_secret_key_from_env".to_string();
-    let state = state::AppState::new(db, jwt_secret);
+    let state = state::AppState::new(db, app_settings.creds.jwt_secret);
 
     // 4. Build Application with State
     let app = crate::handler::http::rest::route::init_route(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], app_settings.port));
+    let addr = SocketAddr::from(([127, 0, 0, 1], app_settings.app_metadata.port));
     println!("🚀 Server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
