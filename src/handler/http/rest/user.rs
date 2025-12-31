@@ -7,7 +7,10 @@ use axum::{
 use crate::{
     entity::{
         response::AppCode,
-        user::{CreateUserUseParam, LoginRequest, LoginResponse, RegisterRequest},
+        user::{
+            CreateUserUseParam, LoginRequest, LoginResponse, RegisterRequest, UserDomParam,
+            UserUseResponse,
+        },
     },
     handler::http::middleware::context::RequestContext,
     state::AppState,
@@ -44,7 +47,7 @@ pub async fn create_user_handler(
             format!("User created successfully with ID {}", user_id),
         ),
         Err(e) => ctx.error(
-            AppCode::InternalServerError,
+            AppCode::InternalServerError(e.clone()),
             format!("Failed to create user: {}", e),
         ),
     }
@@ -77,5 +80,39 @@ pub async fn login_handler(
             ctx.success(AppCode::Success, resp)
         }
         Err(e) => ctx.error(AppCode::Unauthorized, e.to_string()),
+    }
+}
+
+// This is just for the testing purpose
+#[utoipa::path(
+    get,
+    path = "/api/v1/users",
+    tag = "User",
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "List users successfully", body = Vec<UserUseResponse>),
+        (status = 500, description = "Internal Server Error", body = String)
+    )
+)]
+pub async fn get_user_list_handler(
+    State(state): State<AppState>,
+    Extension(ctx): Extension<RequestContext>,
+) -> impl IntoResponse {
+    let params = UserDomParam {
+        id: Some(2),
+        email_eq: None,
+    };
+
+    // Call UserUsecase
+    match state.user_usecase.get_list_user(params).await {
+        Ok((users, total)) => {
+            println!("The total is: {}", total);
+            let resp = users;
+            println!("The users are: {:?}", &resp);
+            ctx.success(AppCode::Success, resp)
+        }
+        Err(e) => ctx.error(AppCode::InternalServerError(e.to_string()), e.to_string()),
     }
 }

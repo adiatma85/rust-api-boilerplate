@@ -2,6 +2,8 @@ use axum::{Json, http::StatusCode};
 use chrono::Utc;
 use serde::Serialize;
 
+use crate::entity::error::AppError;
+
 // 1. The Main Wrapper
 // We use <T> to mimic "interface{}" or "any"
 #[derive(Serialize)]
@@ -45,12 +47,13 @@ pub struct Pagination {
 
 // --- The "Code Pattern" Enum ---
 // This replaces your "codes.Compile(code)" logic
+#[derive(Debug)]
 pub enum AppCode {
     Success,
     // Created,
     Unauthorized,
     NotFound,
-    InternalServerError,
+    InternalServerError(String),
     // Add more as needed
 }
 
@@ -78,11 +81,38 @@ impl AppCode {
                 "Not Found".to_string(),
                 "Resource not found".to_string(),
             ),
-            AppCode::InternalServerError => (
+            AppCode::InternalServerError(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal Server Error".to_string(),
-                "An internal server error occurred".to_string(),
+                format!("An internal server error occurred: {}", err),
             ),
+        }
+    }
+}
+
+// The Bridge: Convert Logic Error -> Presentation Code
+impl From<AppError> for AppCode {
+    fn from(err: AppError) -> Self {
+        match err {
+            // AppError::Unauthorized => AppCode::Unauthorized,
+            AppError::NotFound => AppCode::NotFound,
+            // We swallow the internal error string here because AppCode
+            // is for the public JSON response
+            AppError::InternalServerError(err) => AppCode::InternalServerError(err),
+        }
+    }
+}
+
+impl std::fmt::Display for AppCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AppCode::Success => write!(f, "Success"),
+            // AppCode::Created => write!(f, "Created"),
+            AppCode::NotFound => write!(f, "Not Found"),
+            AppCode::Unauthorized => write!(f, "Unauthorized"),
+            // AppCode::Forbidden => write!(f, "Forbidden"),
+            // AppCode::BadRequest => write!(f, "Bad Request"),
+            AppCode::InternalServerError(err) => write!(f, "Internal Server Error. {}", err),
         }
     }
 }

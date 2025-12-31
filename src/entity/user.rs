@@ -1,6 +1,8 @@
-use sea_orm::entity::prelude::*;
+use sea_orm::{Condition, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+
+use crate::entity::Filterable;
 
 // --- Model for the Database ---
 
@@ -34,12 +36,23 @@ pub struct CreateUserDomParam {
     pub hashed_password: String,
 }
 
+pub struct UserDomParam {
+    pub id: Option<i32>,
+    pub email_eq: Option<String>,
+}
+
 // --- Structs that used in the usecase ---
 
 pub struct CreateUserUseParam {
     pub name: String,
     pub email: String,
     pub password: String,
+}
+
+#[derive(Serialize, ToSchema, Debug)]
+pub struct UserUseResponse {
+    pub id: Option<i32>,
+    pub email: Option<String>,
 }
 
 // --- Public structs for the Request and Response (DTO) ---
@@ -63,3 +76,24 @@ pub struct LoginResponse {
 }
 
 // --- Helper Functions if needed ---
+
+impl Filterable for UserDomParam {
+    // This function replaces your 'qb.Build' logic
+    fn to_condition(&self) -> Condition {
+        // Condition::all() is equivalent to "WHERE 1=1" (AND logic)
+        // Condition::any() is equivalent to OR logic
+        let mut condition = Condition::all();
+
+        // 1. Exact Match (Equivalent to your standard tag handling)
+        if let Some(id) = self.id {
+            condition = condition.add(Column::Id.eq(id));
+        }
+
+        // 2 Exact match for the email
+        if let Some(email) = &self.email_eq {
+            condition = condition.add(Column::Email.eq(email.as_str()));
+        }
+
+        condition
+    }
+}

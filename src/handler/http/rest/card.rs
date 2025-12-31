@@ -48,7 +48,7 @@ pub async fn create_card_handler(
 
     match state.card_usecase.create_card(params).await {
         Ok(id) => ctx.success(AppCode::Success, format!("Card created with ID: {}", id)),
-        Err(e) => ctx.error(AppCode::InternalServerError, e),
+        Err(e) => ctx.error(AppCode::InternalServerError(e.clone()), e),
     }
 }
 
@@ -88,8 +88,9 @@ pub async fn update_card_status_handler(
             let status = if e == "Card not found" {
                 AppCode::NotFound
             } else {
-                AppCode::InternalServerError
+                AppCode::InternalServerError(e.clone())
             };
+
             ctx.error(status, e)
         }
     }
@@ -123,7 +124,7 @@ pub async fn delete_card_handler(
             let status = if e == "Card not found" {
                 AppCode::NotFound
             } else {
-                AppCode::InternalServerError
+                AppCode::InternalServerError(e.clone())
             };
             ctx.error(status, e)
         }

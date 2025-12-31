@@ -1,13 +1,20 @@
 use async_trait::async_trait;
 use sea_orm::{ActiveValue::Set, DatabaseConnection, EntityTrait};
 
-use crate::entity::user::{self, CreateUserDomParam};
+use crate::{
+    domain::fetch_list,
+    entity::{
+        error::AppError,
+        user::{self, CreateUserDomParam, UserDomParam},
+    },
+};
 
 // 1. Defining the interface or trait for the Domain
 // "Send + Sync" is required so this trait can be shared across threads (Axum requirement)
 #[async_trait]
 pub trait UserDomainTrait: Send + Sync {
     async fn create(&self, params: CreateUserDomParam) -> Result<i32, String>;
+    async fn get_list(&self, params: UserDomParam) -> Result<(Vec<user::Model>, i64), AppError>;
 }
 
 // 1. The Struct holding the DB Connection
@@ -45,5 +52,15 @@ impl UserDomainTrait for UserDomainImpl {
             .map_err(|e| e.to_string())?;
 
         Ok(result.last_insert_id)
+    }
+
+    async fn get_list(&self, params: UserDomParam) -> Result<(Vec<user::Model>, i64), AppError> {
+        // You can use '?' here because fetch_list returns DbErr,
+        // and we implemented From<DbErr> for AppError
+        let (users, total) = fetch_list::<user::Entity, _, _>(&self.db, params, 0, 10)
+            .await
+            .map_err(AppError::from)?;
+
+        Ok((users, total as i64))
     }
 }

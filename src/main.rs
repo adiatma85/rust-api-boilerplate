@@ -35,7 +35,7 @@ async fn main() {
     let state = state::AppState::new(db, app_settings.creds.jwt_secret);
 
     // 4. Build Application with State
-    let app = crate::handler::http::rest::route::init_route(state);
+    let app = crate::handler::http::rest::init_route(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], app_settings.app_metadata.port));
     println!("🚀 Server listening on http://{}", addr);

@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use crate::{
     domain::user::UserDomainTrait,
-    entity::user::{CreateUserDomParam, CreateUserUseParam},
+    entity::{
+        response::AppCode,
+        user::{CreateUserDomParam, CreateUserUseParam, UserDomParam, UserUseResponse},
+    },
     usecase::auth::AuthUsecase,
 };
 
@@ -31,5 +34,31 @@ impl UserUsecase {
         };
 
         self.user_domain.create(repo_params).await
+    }
+
+    pub async fn get_list_user(
+        &self,
+        params: UserDomParam,
+    ) -> Result<(Vec<UserUseResponse>, i64), AppCode> {
+        let result = self.user_domain.get_list(params).await;
+
+        // This will change the Error AppError to AppCode instead
+        match result {
+            Ok((users, total)) => {
+                println!("The original users are: {:?}", &users);
+                let user_responses = users
+                    .into_iter()
+                    .map(|user| UserUseResponse {
+                        id: Some(user.id),
+                        email: Some(user.email),
+                    })
+                    .collect();
+
+                println!("The users are: {:?}", &user_responses);
+
+                Ok((user_responses, total))
+            }
+            Err(err) => Err(AppCode::from(err)),
+        }
     }
 }

@@ -889,6 +889,7 @@ dependencies = [
  "rand_core 0.9.3",
  "sea-orm",
  "serde",
+ "thiserror",
  "tokio",
  "utoipa",
  "utoipa-swagger-ui",
