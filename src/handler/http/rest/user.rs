@@ -87,7 +87,7 @@ pub async fn login_handler(
 #[utoipa::path(
     get,
     path = "/api/v1/users",
-    tag = "User",
+    tag = "Users",
     security(
         ("bearer_auth" = [])
     ),

@@ -11,7 +11,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
     handler::http::{
-        doc::api_doc,
+        doc,
         middleware::{auth::auth_middleware, context::context_middleware},
         rest::{
             card::{create_card_handler, delete_card_handler, update_card_status_handler},
@@ -24,7 +24,7 @@ use crate::{
 
 pub fn init_route(state: AppState) -> Router {
     // Open API
-    let api_doc = api_doc::ApiDoc::openapi();
+    let api_doc = doc::ApiDoc::openapi();
 
     // Routes
     let v1_route = v1_routes(state.clone());

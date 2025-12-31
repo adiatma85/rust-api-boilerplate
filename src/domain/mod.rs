@@ -9,6 +9,8 @@ use crate::{
 
 pub mod user;
 
+// --- Structs and Initiation
+
 pub struct Domain {
     pub user: Arc<dyn UserDomainTrait>,
 }
@@ -27,7 +29,7 @@ pub fn init(param: InitParam) -> Domain {
     Domain { user }
 }
 
-// Init function goes in here
+// --- General Helper function is below ---
 
 // A generic function to fetch a list for ANY Entity
 // E = The Entity (e.g., user::Entity)
