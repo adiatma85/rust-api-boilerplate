@@ -2,7 +2,14 @@ use std::sync::Arc;
 
 use sea_orm::DatabaseConnection;
 
-use crate::usecase::{auth::AuthUsecase, card::CardUsecase, user::UserUsecase};
+use crate::{
+    domain::user::{UserDomainImpl, UserDomainInitParam},
+    usecase::{
+        auth::AuthUsecase,
+        card::CardUsecase,
+        user::{UserUseInitParam, UserUsecase},
+    },
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -15,7 +22,9 @@ impl AppState {
     pub fn new(db: DatabaseConnection, secret_key: String) -> Self {
         // Initialize the usecases
         let auth = AuthUsecase::new(db.clone(), secret_key);
-        let user = UserUsecase::new(db.clone());
+        let user = UserUsecase::new(UserUseInitParam {
+            user_domain: Arc::new(UserDomainImpl::new(UserDomainInitParam { db: db.clone() })),
+        });
         let card = CardUsecase::new(db.clone());
 
         Self {

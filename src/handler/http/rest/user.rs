@@ -7,11 +7,10 @@ use axum::{
 use crate::{
     entity::{
         response::AppCode,
-        user::{LoginRequest, LoginResponse, RegisterRequest},
+        user::{CreateUserUseParam, LoginRequest, LoginResponse, RegisterRequest},
     },
     handler::http::middleware::context::RequestContext,
     state::AppState,
-    usecase::user::CreateUserParams,
 };
 
 // 2. The Handler
@@ -31,7 +30,7 @@ pub async fn create_user_handler(
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
     // Map HTTP Request -> Usecase Params
-    let params = CreateUserParams {
+    let params = CreateUserUseParam {
         name: payload.name,
         email: payload.email,
         password: payload.password,

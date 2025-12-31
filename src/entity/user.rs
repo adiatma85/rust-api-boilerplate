@@ -26,6 +26,22 @@ pub enum Relation {}
 // This trait enables the "Active Record" behavior (save, delete, etc.)
 impl ActiveModelBehavior for ActiveModel {}
 
+// --- Structs that used in domain ---
+
+pub struct CreateUserDomParam {
+    pub name: String,
+    pub email: String,
+    pub hashed_password: String,
+}
+
+// --- Structs that used in the usecase ---
+
+pub struct CreateUserUseParam {
+    pub name: String,
+    pub email: String,
+    pub password: String,
+}
+
 // --- Public structs for the Request and Response (DTO) ---
 
 #[derive(Deserialize, ToSchema)]
@@ -45,3 +61,5 @@ pub struct LoginRequest {
 pub struct LoginResponse {
     pub token: String,
 }
+
+// --- Helper Functions if needed ---
