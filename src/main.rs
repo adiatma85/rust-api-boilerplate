@@ -43,7 +43,6 @@ async fn main() {
 
     // 3. Create the State
     let state = state::AppState::new(state::AppStateInitParam {
-        db,
         secret_key: app_settings.creds.jwt_secret,
         usecase,
     });
