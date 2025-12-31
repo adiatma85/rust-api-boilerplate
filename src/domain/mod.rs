@@ -1,8 +1,33 @@
-use crate::entity::Filterable;
+use std::sync::Arc;
 
 use sea_orm::{DatabaseConnection, EntityTrait, FromQueryResult, PaginatorTrait, QueryFilter};
 
+use crate::{
+    domain::user::{UserDomainImpl, UserDomainTrait},
+    entity::Filterable,
+};
+
 pub mod user;
+
+pub struct Domain {
+    pub user: Arc<dyn UserDomainTrait>,
+}
+
+pub struct InitParam {
+    pub db: DatabaseConnection,
+}
+
+pub fn init(param: InitParam) -> Domain {
+    // Initialize list of all domain
+    let user = Arc::new(UserDomainImpl::new(user::UserDomainInitParam {
+        db: param.db.clone(),
+    }));
+
+    // Return the value in here
+    Domain { user }
+}
+
+// Init function goes in here
 
 // A generic function to fetch a list for ANY Entity
 // E = The Entity (e.g., user::Entity)

@@ -31,8 +31,22 @@ async fn main() {
 
     println!("✅ Database connected successfully");
 
+    // Initialize the domain layer
+    let domain = crate::domain::init(crate::domain::InitParam { db: db.clone() });
+
+    // Initialize the usecase layer
+    let usecase = crate::usecase::init(crate::usecase::InitParam {
+        db: db.clone(),
+        domain,
+        jwt_secret: app_settings.creds.jwt_secret.clone(),
+    });
+
     // 3. Create the State
-    let state = state::AppState::new(db, app_settings.creds.jwt_secret);
+    let state = state::AppState::new(state::AppStateInitParam {
+        db,
+        secret_key: app_settings.creds.jwt_secret,
+        usecase,
+    });
 
     // 4. Build Application with State
     let app = crate::handler::http::rest::init_route(state);

@@ -46,7 +46,7 @@ pub async fn create_card_handler(
         user_id: user.user_id, // We use the ID from the valid Token
     };
 
-    match state.card_usecase.create_card(params).await {
+    match state.usecase.card.create_card(params).await {
         Ok(id) => ctx.success(AppCode::Success, format!("Card created with ID: {}", id)),
         Err(e) => ctx.error(AppCode::InternalServerError(e.clone()), e),
     }
@@ -82,7 +82,7 @@ pub async fn update_card_status_handler(
         status: payload.status,
     };
 
-    match state.card_usecase.update_card_status(params).await {
+    match state.usecase.card.update_card_status(params).await {
         Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
         Err(e) => {
             let status = if e == "Card not found" {
@@ -118,7 +118,7 @@ pub async fn delete_card_handler(
     Path(id): Path<i32>,
     Extension(ctx): Extension<RequestContext>,
 ) -> impl IntoResponse {
-    match state.card_usecase.delete_card(id).await {
+    match state.usecase.card.delete_card(id).await {
         Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
         Err(e) => {
             let status = if e == "Card not found" {

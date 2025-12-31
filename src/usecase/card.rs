@@ -2,6 +2,8 @@ use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel
 
 use crate::entity::card;
 
+// --- Trait and Usecase Struct
+
 // --- DTOs (Parameters) ---
 pub struct CreateCardParams {
     pub title: String,
@@ -19,9 +21,15 @@ pub struct CardUsecase {
     db: DatabaseConnection,
 }
 
+pub struct CardUseInitParam {
+    pub db: DatabaseConnection,
+}
+
+// --- Implementation ---
+
 impl CardUsecase {
-    pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
+    pub fn new(params: CardUseInitParam) -> Self {
+        Self { db: params.db }
     }
 
     // 1. Create Card

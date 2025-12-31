@@ -41,7 +41,7 @@ pub async fn create_user_handler(
 
     // Call the Usecase (Logic Layer)
     // We use 'state.user_usecase' which is the Arc<UserUsecase> we set up in main.rs
-    match state.user_usecase.create_user(params).await {
+    match state.usecase.user.create_user(params).await {
         Ok(user_id) => ctx.success(
             AppCode::Success,
             format!("User created successfully with ID {}", user_id),
@@ -74,7 +74,7 @@ pub async fn login_handler(
     };
 
     // Call AuthUsecase
-    match state.auth_usecase.login(params).await {
+    match state.usecase.auth.login(params).await {
         Ok(token) => {
             let resp = LoginResponse { token };
             ctx.success(AppCode::Success, resp)
@@ -106,7 +106,7 @@ pub async fn get_user_list_handler(
     };
 
     // Call UserUsecase
-    match state.user_usecase.get_list_user(params).await {
+    match state.usecase.user.get_list_user(params).await {
         Ok((users, total)) => {
             println!("The total is: {}", total);
             let resp = users;

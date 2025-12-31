@@ -26,13 +26,21 @@ pub struct LoginParams {
 
 // 3. The Usecase Struct
 pub struct AuthUsecase {
+    db: DatabaseConnection,
+    jwt_secret: String,
+}
+
+pub struct AuthUseInitParam {
     pub db: DatabaseConnection,
-    pub jwt_secret: String, // We store the secret here
+    pub jwt_secret: String,
 }
 
 impl AuthUsecase {
-    pub fn new(db: DatabaseConnection, jwt_secret: String) -> Self {
-        Self { db, jwt_secret }
+    pub fn new(params: AuthUseInitParam) -> Self {
+        Self {
+            db: params.db,
+            jwt_secret: params.jwt_secret,
+        }
     }
 
     // --- Helper: Hash Password (Public so UserUsecase can use it) ---
