@@ -21,14 +21,14 @@ pub struct CardUsecase {
     db: DatabaseConnection,
 }
 
-pub struct CardUseInitParam {
+pub struct InitParam {
     pub db: DatabaseConnection,
 }
 
 // --- Implementation ---
 
 impl CardUsecase {
-    pub fn new(params: CardUseInitParam) -> Self {
+    pub fn new(params: InitParam) -> Self {
         Self { db: params.db }
     }
 

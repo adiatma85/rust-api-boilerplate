@@ -30,13 +30,13 @@ pub struct AuthUsecase {
     jwt_secret: String,
 }
 
-pub struct AuthUseInitParam {
+pub struct InitParam {
     pub db: DatabaseConnection,
     pub jwt_secret: String,
 }
 
 impl AuthUsecase {
-    pub fn new(params: AuthUseInitParam) -> Self {
+    pub fn new(params: InitParam) -> Self {
         Self {
             db: params.db,
             jwt_secret: params.jwt_secret,

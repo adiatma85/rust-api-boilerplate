@@ -24,14 +24,14 @@ pub struct UserUsecase {
     user_domain: Arc<dyn UserDomainTrait>,
 }
 
-pub struct UserUseInitParam {
+pub struct InitParam {
     pub user_domain: Arc<dyn UserDomainTrait>,
 }
 
 // --- Implementation blocks ---
 
 impl UserUsecase {
-    pub fn new(init_param: UserUseInitParam) -> Self {
+    pub fn new(init_param: InitParam) -> Self {
         Self {
             user_domain: init_param.user_domain,
         }

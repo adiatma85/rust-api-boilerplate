@@ -1,4 +1,4 @@
-use sea_orm::{Condition, entity::prelude::*};
+use sea_orm::{Condition, IntoActiveModel, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -95,5 +95,18 @@ impl Filterable for UserDomParam {
         }
 
         condition
+    }
+}
+
+// Map the Param to the DB ActiveModel
+// This is boilerplate, but you write it once and it guarantees type safety.
+impl IntoActiveModel<ActiveModel> for CreateUserDomParam {
+    fn into_active_model(self) -> ActiveModel {
+        ActiveModel {
+            email: sea_orm::Set(self.email),
+            name: sea_orm::Set(self.name),
+            // Don't set ID here, the DB handles auto-increment
+            ..Default::default()
+        }
     }
 }

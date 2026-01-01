@@ -6,8 +6,8 @@ use crate::{
     domain::Domain,
     usecase::{
         auth::AuthUsecase,
-        card::{CardUseInitParam, CardUsecase},
-        user::{UserUseInitParam, UserUsecase, UserUsecaseTrait},
+        card::CardUsecase,
+        user::{UserUsecase, UserUsecaseTrait},
     },
 };
 
@@ -38,15 +38,15 @@ pub struct InitParam {
 
 // This is the initialize
 pub fn init(params: InitParam) -> Usecase {
-    let user = Arc::new(UserUsecase::new(UserUseInitParam {
+    let user = Arc::new(UserUsecase::new(user::InitParam {
         user_domain: params.domain.user,
     }));
 
-    let card = Arc::new(CardUsecase::new(CardUseInitParam {
+    let card = Arc::new(CardUsecase::new(card::InitParam {
         db: params.db.clone(),
     }));
 
-    let auth = Arc::new(AuthUsecase::new(crate::usecase::auth::AuthUseInitParam {
+    let auth = Arc::new(AuthUsecase::new(auth::InitParam {
         db: params.db,
         jwt_secret: params.jwt_secret,
     }));
