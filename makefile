@@ -6,6 +6,10 @@ lint:
 format:
 	cargo +nightly fmt
 
+.PHONY: format-check
+format-check:
+	cargo +nightly fmt -- --check
+
 .PHONY: format-lint
 format-lint: lint
 	cargo +nightly fmt

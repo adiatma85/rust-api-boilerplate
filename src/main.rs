@@ -5,10 +5,10 @@ mod handler;
 mod helper;
 mod state;
 mod usecase;
-
 use std::net::SocketAddr;
 
-use sea_orm::Database;
+use sea_orm::{Database, DatabaseConnection};
+use tokio::signal;
 
 use crate::{config::app_settings::AppSettings, handler::http::rest};
 
@@ -33,7 +33,7 @@ async fn main() {
     println!("✅ Database connected successfully");
 
     // Initialize the domain layer
-    let domain = domain::init(domain::InitParam { db });
+    let domain = domain::init(domain::InitParam { db: db.clone() });
 
     // Initialize the usecase layer
     let usecase = usecase::init(usecase::InitParam {
@@ -54,5 +54,56 @@ async fn main() {
     println!("🚀 Server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
+
+    clean_up(db).await;
+}
+
+// This is the function to make the application shutdown gracefully
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    println!("\n🛑 Signal received, stopping web server...");
+}
+
+// Clean up resources that we run in here
+async fn clean_up(db: DatabaseConnection) {
+    // --- CLEANUP PHASE ---
+    // The code reaches here ONLY after the shutdown signal is received
+    // and active HTTP requests have finished.
+
+    println!("Creating graceful shutdown...");
+
+    // Explicitly close the database connection
+    // This ensures the connection pool is drained and closed properly
+    if let Err(err) = db.close().await {
+        eprintln!("Error closing database: {}", err);
+    } else {
+        println!("✅ Database connection closed successfully");
+    }
+
+    println!("👋 Bye!");
 }
