@@ -6,15 +6,14 @@ use axum::{
 
 use crate::{
     entity::{
-        card::{CreateCardRequest, UpdateCardStatusRequest},
+        card::{
+            CreateCardRequest, CreateCardUseParam, UpdateCardStatusRequest, UpdateCardUseParam,
+        },
         response::AppCode,
     },
     handler::http::middleware::context::RequestContext,
     state::AppState,
-    usecase::{
-        auth::Claims,
-        card::{CreateCardParams, UpdateCardParams},
-    },
+    usecase::auth::Claims,
 }; // Import Claims to read the user_id
 
 // --- Handlers ---
@@ -40,15 +39,18 @@ pub async fn create_card_handler(
     Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<CreateCardRequest>,
 ) -> impl IntoResponse {
-    let params = CreateCardParams {
+    let params = CreateCardUseParam {
         title: payload.title,
         description: payload.description,
         user_id: user.user_id, // We use the ID from the valid Token
     };
 
-    match state.usecase.card.create_card(params).await {
-        Ok(id) => ctx.success(AppCode::Success, format!("Card created with ID: {}", id)),
-        Err(e) => ctx.error(AppCode::InternalServerError(e.clone()), e),
+    match state.usecase.card.create(params).await {
+        Ok(model) => ctx.success(
+            AppCode::Success,
+            format!("Card created with model: {:?}", model),
+        ),
+        Err(e) => ctx.error(e.clone(), e.to_string()),
     }
 }
 
@@ -77,22 +79,14 @@ pub async fn update_card_status_handler(
     Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<UpdateCardStatusRequest>,
 ) -> impl IntoResponse {
-    let params = UpdateCardParams {
+    let params = UpdateCardUseParam {
         id,
         status: payload.status,
     };
 
-    match state.usecase.card.update_card_status(params).await {
+    match state.usecase.card.update_one(params).await {
         Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
-        Err(e) => {
-            let status = if e == "Card not found" {
-                AppCode::NotFound
-            } else {
-                AppCode::InternalServerError(e.clone())
-            };
-
-            ctx.error(status, e)
-        }
+        Err(e) => ctx.error(e.clone(), e.to_string()),
     }
 }
 
@@ -118,15 +112,13 @@ pub async fn delete_card_handler(
     Path(id): Path<i32>,
     Extension(ctx): Extension<RequestContext>,
 ) -> impl IntoResponse {
-    match state.usecase.card.delete_card(id).await {
-        Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
-        Err(e) => {
-            let status = if e == "Card not found" {
-                AppCode::NotFound
-            } else {
-                AppCode::InternalServerError(e.clone())
-            };
-            ctx.error(status, e)
-        }
+    match state
+        .usecase
+        .card
+        .delete_one(crate::entity::card::CardUseParam { id: Some(id) })
+        .await
+    {
+        Ok(_) => ctx.success(AppCode::Success, "Card deleted successfully"),
+        Err(e) => ctx.error(e.clone(), e.to_string()),
     }
 }

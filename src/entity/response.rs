@@ -47,7 +47,7 @@ pub struct Pagination {
 
 // --- The "Code Pattern" Enum ---
 // This replaces your "codes.Compile(code)" logic
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AppCode {
     Success,
     // Created,

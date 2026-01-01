@@ -1,87 +1,99 @@
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
+use std::sync::Arc;
 
-use crate::entity::card;
+use async_trait::async_trait;
+
+use crate::{
+    domain::card::CardDomainTrait,
+    entity::{
+        card::{self, CardUseParam, CreateCardUseParam, UpdateCardUseParam},
+        response::AppCode,
+    },
+};
 
 // --- Trait and Usecase Struct
+#[async_trait]
+pub trait CardUsecaseTrait: Send + Sync {
+    async fn create(&self, create_param: CreateCardUseParam) -> Result<card::Model, AppCode>;
+    #[allow(dead_code)]
+    async fn get_list(&self, param: CardUseParam) -> Result<Vec<card::Model>, AppCode>;
 
-// --- DTOs (Parameters) ---
-pub struct CreateCardParams {
-    pub title: String,
-    pub description: Option<String>,
-    pub user_id: i32,
+    // This need to be changed in the future
+    async fn update_one(&self, update_param: UpdateCardUseParam) -> Result<card::Model, AppCode>;
+    async fn delete_one(&self, param: CardUseParam) -> Result<card::Model, AppCode>;
 }
 
-pub struct UpdateCardParams {
-    pub id: i32,
-    pub status: String,
-}
-
-// --- The Usecase Struct ---
 pub struct CardUsecase {
-    db: DatabaseConnection,
+    card_domain: Arc<dyn CardDomainTrait>,
 }
 
 pub struct InitParam {
-    pub db: DatabaseConnection,
+    pub card_domain: Arc<dyn CardDomainTrait>,
 }
 
-// --- Implementation ---
+pub fn init(param: InitParam) -> impl CardUsecaseTrait {
+    CardUsecase {
+        card_domain: param.card_domain,
+    }
+}
 
-impl CardUsecase {
-    pub fn new(params: InitParam) -> Self {
-        Self { db: params.db }
+#[async_trait]
+impl CardUsecaseTrait for CardUsecase {
+    async fn create(&self, create_param: CreateCardUseParam) -> Result<card::Model, AppCode> {
+        let create_dom_param = card::CreateCardDomParam {
+            title: create_param.title,
+            description: create_param.description,
+        };
+
+        let result = self
+            .card_domain
+            .create(create_dom_param)
+            .await
+            .map_err(AppCode::from)?;
+
+        Ok(result)
     }
 
-    // 1. Create Card
-    pub async fn create_card(&self, params: CreateCardParams) -> Result<i32, String> {
-        let new_card = card::ActiveModel {
-            title: Set(params.title),
-            description: Set(params.description),
-            user_id: Set(params.user_id),
-            card_status: Set("todo".to_string()), // Default status
+    async fn get_list(&self, param: CardUseParam) -> Result<Vec<card::Model>, AppCode> {
+        let card_dom_param = card::CardDomParam { id: param.id };
+        let (result, _total) = self
+            .card_domain
+            .get_list(card_dom_param)
+            .await
+            .map_err(AppCode::from)?;
+
+        println!("Total cards: {}", _total);
+
+        Ok(result)
+    }
+
+    async fn update_one(&self, update_param: UpdateCardUseParam) -> Result<card::Model, AppCode> {
+        let dom_param = card::CardDomParam {
+            id: Some(update_param.id),
+        };
+
+        let update_dom_param = card::CardDomUpdateParam {
+            card_status: Some(update_param.status),
             ..Default::default()
         };
 
-        let result = card::Entity::insert(new_card)
-            .exec(&self.db)
+        let result = self
+            .card_domain
+            .update_one(dom_param, update_dom_param)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(AppCode::from)?;
 
-        Ok(result.last_insert_id)
+        Ok(result)
     }
 
-    // 2. Update Status
-    pub async fn update_card_status(&self, params: UpdateCardParams) -> Result<(), String> {
-        // Find the card first
-        let card_model = card::Entity::find_by_id(params.id)
-            .one(&self.db)
+    async fn delete_one(&self, param: CardUseParam) -> Result<card::Model, AppCode> {
+        let dom_param = card::CardDomParam { id: param.id };
+
+        let result = self
+            .card_domain
+            .delete_one(dom_param)
             .await
-            .map_err(|e| e.to_string())?
-            .ok_or("Card not found".to_string())?;
+            .map_err(AppCode::from)?;
 
-        // Convert to ActiveModel to update it
-        let mut active_card = card_model.into_active_model();
-        active_card.card_status = Set(params.status);
-
-        active_card
-            .update(&self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(())
-    }
-
-    // 3. Delete Card
-    pub async fn delete_card(&self, id: i32) -> Result<(), String> {
-        let result = card::Entity::delete_by_id(id)
-            .exec(&self.db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if result.rows_affected == 0 {
-            return Err("Card not found".to_string());
-        }
-
-        Ok(())
+        Ok(result)
     }
 }

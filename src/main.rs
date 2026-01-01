@@ -9,7 +9,7 @@ use std::net::SocketAddr;
 
 use sea_orm::Database;
 
-use crate::config::app_settings::AppSettings;
+use crate::{config::app_settings::AppSettings, handler::http::rest};
 
 const CONFIG_PATH: &str = "./etc/cfg/conf.json";
 
@@ -32,10 +32,10 @@ async fn main() {
     println!("✅ Database connected successfully");
 
     // Initialize the domain layer
-    let domain = crate::domain::init(crate::domain::InitParam { db: db.clone() });
+    let domain = domain::init(domain::InitParam { db: db.clone() });
 
     // Initialize the usecase layer
-    let usecase = crate::usecase::init(crate::usecase::InitParam {
+    let usecase = usecase::init(usecase::InitParam {
         db: db.clone(),
         domain,
         jwt_secret: app_settings.creds.jwt_secret.clone(),
@@ -48,7 +48,7 @@ async fn main() {
     });
 
     // 4. Build Application with State
-    let app = crate::handler::http::rest::init_route(state);
+    let app = rest::init_route(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], app_settings.app_metadata.port));
     println!("🚀 Server listening on http://{}", addr);

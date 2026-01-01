@@ -6,7 +6,7 @@ use crate::{
     domain::Domain,
     usecase::{
         auth::AuthUsecase,
-        card::CardUsecase,
+        card::CardUsecaseTrait,
         user::{UserUsecase, UserUsecaseTrait},
     },
 };
@@ -19,7 +19,7 @@ pub mod user;
 pub struct Usecase {
     pub user: Arc<dyn UserUsecaseTrait>,
     // For the moment, we will change the CardUsecase in the future to use trait instead
-    pub card: Arc<CardUsecase>,
+    pub card: Arc<dyn CardUsecaseTrait>,
     // For the moment, we will change the AuthUsecase in the future to use trait instead
     pub auth: Arc<AuthUsecase>,
 }
@@ -42,8 +42,8 @@ pub fn init(params: InitParam) -> Usecase {
         user_domain: params.domain.user,
     }));
 
-    let card = Arc::new(CardUsecase::new(card::InitParam {
-        db: params.db.clone(),
+    let card = Arc::new(card::init(card::InitParam {
+        card_domain: params.domain.card,
     }));
 
     let auth = Arc::new(AuthUsecase::new(auth::InitParam {

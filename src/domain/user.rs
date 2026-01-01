@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sea_orm::{ActiveValue::Set, DatabaseConnection, EntityTrait};
 
 use crate::{
-    domain::fetch_list,
+    domain::helper::fetch_list,
     entity::{
         error::AppError,
         user::{self, CreateUserDomParam, UserDomParam},
@@ -24,14 +24,12 @@ pub struct UserDomainImpl {
     // But it will big chance that this actually need a redis instead
 }
 
-pub struct UserDomainInitParam {
+pub struct InitParam {
     pub db: DatabaseConnection,
 }
 
-impl UserDomainImpl {
-    pub fn new(params: UserDomainInitParam) -> Self {
-        Self { db: params.db }
-    }
+pub fn init(param: InitParam) -> impl UserDomainTrait {
+    UserDomainImpl { db: param.db }
 }
 
 // 2. Implement the Trait
