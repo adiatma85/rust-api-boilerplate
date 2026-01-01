@@ -36,6 +36,7 @@ pub struct CreateUserDomParam {
     pub hashed_password: String,
 }
 
+#[derive(Default, Debug)]
 pub struct UserDomParam {
     pub id: Option<i32>,
     pub email_eq: Option<String>,

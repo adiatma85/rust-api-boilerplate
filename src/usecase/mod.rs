@@ -1,14 +1,8 @@
 use std::sync::Arc;
 
-use sea_orm::DatabaseConnection;
-
 use crate::{
     domain::Domain,
-    usecase::{
-        auth::AuthUsecase,
-        card::CardUsecaseTrait,
-        user::{UserUsecase, UserUsecaseTrait},
-    },
+    usecase::{auth::AuthUsecaseTrait, card::CardUsecaseTrait, user::UserUsecaseTrait},
 };
 
 pub mod auth;
@@ -18,16 +12,11 @@ pub mod user;
 #[derive(Clone)]
 pub struct Usecase {
     pub user: Arc<dyn UserUsecaseTrait>,
-    // For the moment, we will change the CardUsecase in the future to use trait instead
     pub card: Arc<dyn CardUsecaseTrait>,
-    // For the moment, we will change the AuthUsecase in the future to use trait instead
-    pub auth: Arc<AuthUsecase>,
+    pub auth: Arc<dyn AuthUsecaseTrait>,
 }
 
 pub struct InitParam {
-    // For now we also import database in here:
-    pub db: DatabaseConnection,
-
     // This is the normal import because we want to standardize this architecture
     pub domain: Domain,
 
@@ -38,17 +27,17 @@ pub struct InitParam {
 
 // This is the initialize
 pub fn init(params: InitParam) -> Usecase {
-    let user = Arc::new(UserUsecase::new(user::InitParam {
-        user_domain: params.domain.user,
+    let user = Arc::new(user::init(user::InitParam {
+        user_domain: params.domain.user.clone(),
     }));
 
     let card = Arc::new(card::init(card::InitParam {
         card_domain: params.domain.card,
     }));
 
-    let auth = Arc::new(AuthUsecase::new(auth::InitParam {
-        db: params.db,
+    let auth = Arc::new(auth::init(auth::InitParam {
         jwt_secret: params.jwt_secret,
+        user_domain: params.domain.user,
     }));
 
     Usecase { user, card, auth }

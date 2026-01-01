@@ -107,17 +107,6 @@ where
     }
 }
 
-//  Usage of the fetch_one from the above function
-// async fn get_detail(&self, params: UserDomParam) -> Result<user::Model, AppError> {
-
-//     // Calls generic fetch_one
-//     let user_model = fetch_one::<user::Entity, _, _>(&self.db, params)
-//         .await
-//         .map_err(AppError::from)?; // RecordNotFound becomes AppError::NotFound
-
-//     Ok(user_model)
-// }
-
 // Generic function to CREATE EXACTLY ONE record
 // E = The Entity (e.g., user::Entity)
 // A = The ActiveModel (e.g., user::ActiveModel)
@@ -141,21 +130,6 @@ where
 
     Ok(result)
 }
-
-// The example of the code above is somehing like this
-
-// async fn create_user(&self, params: CreateUserDomParam) -> Result<user::Model, AppError> {
-//     // Calls generic create_one
-//     // Note: We specify <user::Entity, user::ActiveModel, _, _> so Rust knows the types
-//     let new_user = create_one::<user::Entity, user::ActiveModel, _, _>(
-//         &self.db,
-//         params
-//     )
-//     .await
-//     .map_err(AppError::from)?; // Automatically converts DbErr -> AppError
-
-//     Ok(new_user)
-// }
 
 // Generic function to UPDATE EXACTLY ONE record
 // E = Entity
@@ -199,32 +173,6 @@ where
     Ok(updated_model)
 }
 
-// async fn update_user(
-//     &self,
-//     filter: UserDomParam,
-//     updates: UpdateUserDomParam
-// ) -> Result<user::Model, AppError> {
-
-//     // Calls generic update_one
-//     let updated_user = update_one::<user::Entity, user::ActiveModel, _, _, _>(
-//         &self.db,
-//         filter,
-//         updates
-//     )
-//     .await
-//     .map_err(AppError::from)?;
-
-//     Ok(updated_user)
-// }
-
-// 1. The Update DTO
-// This struct must implement Updatable Trait for it to works
-// pub struct UpdateUserDomParam {
-//     pub email: Option<String>,
-//     pub name: Option<String>,
-//     pub status: Option<i32>,
-// }
-
 // Generic function to UPDATE MULTIPLE records based on a filter
 // Returns the number of rows affected.
 #[allow(dead_code)]
@@ -255,25 +203,6 @@ where
 
     Ok(res.rows_affected)
 }
-
-// It must implement this
-// impl IntoActiveModel<user::ActiveModel> for UpdateUserDomParam {
-//     fn into_active_model(self) -> user::ActiveModel {
-//         let mut am = user::ActiveModel::default(); // Starts with all fields "NotSet"
-
-//         if let Some(email) = self.email {
-//             am.email = sea_orm::Set(email);
-//         }
-//         if let Some(name) = self.name {
-//             am.name = sea_orm::Set(name);
-//         }
-//         if let Some(status) = self.status {
-//             am.status = sea_orm::Set(status);
-//         }
-
-//         am
-//     }
-// }
 
 pub async fn delete_one<E, A, M, F>(db: &DatabaseConnection, filter: F) -> Result<M, sea_orm::DbErr>
 where

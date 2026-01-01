@@ -6,6 +6,7 @@ use axum::{
 
 use crate::{
     entity::{
+        auth,
         response::AppCode,
         user::{
             CreateUserUseParam, LoginRequest, LoginResponse, RegisterRequest, UserDomParam,
@@ -68,7 +69,7 @@ pub async fn login_handler(
     Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
-    let params = crate::usecase::auth::LoginParams {
+    let params = auth::LoginParams {
         email: payload.email,
         password: payload.password,
     };

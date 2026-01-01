@@ -2,6 +2,7 @@ mod config;
 mod domain;
 mod entity;
 mod handler;
+mod helper;
 mod state;
 mod usecase;
 
@@ -32,11 +33,10 @@ async fn main() {
     println!("✅ Database connected successfully");
 
     // Initialize the domain layer
-    let domain = domain::init(domain::InitParam { db: db.clone() });
+    let domain = domain::init(domain::InitParam { db });
 
     // Initialize the usecase layer
     let usecase = usecase::init(usecase::InitParam {
-        db: db.clone(),
         domain,
         jwt_secret: app_settings.creds.jwt_secret.clone(),
     });

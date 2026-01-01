@@ -6,6 +6,7 @@ use axum::{
 
 use crate::{
     entity::{
+        auth::Claims,
         card::{
             CreateCardRequest, CreateCardUseParam, UpdateCardStatusRequest, UpdateCardUseParam,
         },
@@ -13,7 +14,6 @@ use crate::{
     },
     handler::http::middleware::context::RequestContext,
     state::AppState,
-    usecase::auth::Claims,
 }; // Import Claims to read the user_id
 
 // --- Handlers ---

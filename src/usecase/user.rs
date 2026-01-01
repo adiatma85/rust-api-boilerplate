@@ -8,7 +8,7 @@ use crate::{
         response::AppCode,
         user::{CreateUserDomParam, CreateUserUseParam, UserDomParam, UserUseResponse},
     },
-    usecase::auth::AuthUsecase,
+    helper,
 };
 
 #[async_trait]
@@ -28,20 +28,18 @@ pub struct InitParam {
     pub user_domain: Arc<dyn UserDomainTrait>,
 }
 
-// --- Implementation blocks ---
-
-impl UserUsecase {
-    pub fn new(init_param: InitParam) -> Self {
-        Self {
-            user_domain: init_param.user_domain,
-        }
+pub fn init(init_param: InitParam) -> impl UserUsecaseTrait {
+    UserUsecase {
+        user_domain: init_param.user_domain,
     }
 }
+
+// --- Implementation blocks ---
 
 #[async_trait]
 impl UserUsecaseTrait for UserUsecase {
     async fn create_user(&self, params: CreateUserUseParam) -> Result<i32, String> {
-        let hashed_pwd = AuthUsecase::hash_password(&params.password)?;
+        let hashed_pwd = helper::hash_password(&params.password).map_err(|e| e.to_string())?;
 
         let repo_params = CreateUserDomParam {
             name: params.name,

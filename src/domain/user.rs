@@ -15,6 +15,7 @@ use crate::{
 pub trait UserDomainTrait: Send + Sync {
     async fn create(&self, params: CreateUserDomParam) -> Result<i32, String>;
     async fn get_list(&self, params: UserDomParam) -> Result<(Vec<user::Model>, i64), AppError>;
+    async fn get_one(&self, params: UserDomParam) -> Result<user::Model, AppError>;
 }
 
 // 1. The Struct holding the DB Connection
@@ -53,12 +54,18 @@ impl UserDomainTrait for UserDomainImpl {
     }
 
     async fn get_list(&self, params: UserDomParam) -> Result<(Vec<user::Model>, i64), AppError> {
-        // You can use '?' here because fetch_list returns DbErr,
-        // and we implemented From<DbErr> for AppError
         let (users, total) = fetch_list::<user::Entity, _, _>(&self.db, params, 0, 10)
             .await
             .map_err(AppError::from)?;
 
         Ok((users, total as i64))
+    }
+
+    async fn get_one(&self, params: UserDomParam) -> Result<user::Model, AppError> {
+        let user = crate::domain::helper::fetch_one::<user::Entity, _, _>(&self.db, params)
+            .await
+            .map_err(AppError::from)?;
+
+        Ok(user)
     }
 }
