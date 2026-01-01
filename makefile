@@ -1,3 +1,10 @@
+# Run this once after cloning the repo
+.PHONY: init
+init:
+	git config core.hooksPath .githooks
+	chmod +x .githooks/pre-commit
+	@echo "✅ Git hooks configured successfully!"
+
 .PHONY: lint
 lint:
 	cargo clippy -- -D warnings
@@ -5,6 +12,10 @@ lint:
 .PHONY: format
 format:
 	cargo +nightly fmt
+
+.PHONY: format-check
+format-check:
+	cargo +nightly fmt -- --check
 
 .PHONY: format-lint
 format-lint: lint

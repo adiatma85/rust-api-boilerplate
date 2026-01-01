@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Stop execution immediately if any command fails
+set -e
+
+echo "🏗️  Delegating to Makefile..."
+
+# 1. Formatting
+# Note: See the warning below about 'make format' vs 'make check-format'
+echo ">> Running make format-check..."
+make format-check
+
+# 2. Check
+echo ">> Running make check..."
+make check
+
+# 3. Lint
+echo ">> Running make lint..."
+make lint
+
+echo "✅ All make targets passed! Committing..."

@@ -1,3 +1,27 @@
 {
-  "port": 8080
+  "app_metadata": {
+    "port": 8080,
+    "name": "Your App Name",
+    "version": "1.0.0",
+    "description": "Your App Description"
+  },
+  "database": {
+    "provider": "mysql",
+    "host": "127.0.0.1",
+    "port": 3306,
+    "username": "root",
+    "password": "password",
+    "name": "kanban_db"
+  },
+  "log": {
+    "level": "info"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379,
+    "password": "password"
+  },
+  "creds": {
+    "jwt_secret": "secret goes in here"
+  }
 }
