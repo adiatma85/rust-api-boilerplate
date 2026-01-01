@@ -1,42 +1,78 @@
-use sea_orm::{DatabaseConnection, EntityTrait, Set};
+use std::sync::Arc;
 
-use crate::{entity::user, usecase::auth::AuthUsecase}; // Import Auth to use hash_password
+use async_trait::async_trait;
 
-pub struct CreateUserParams {
-    pub name: String,
-    pub email: String,
-    pub password: String,
+use crate::{
+    domain::user::UserDomainTrait,
+    entity::{
+        response::AppCode,
+        user::{CreateUserDomParam, CreateUserUseParam, UserDomParam, UserUseResponse},
+    },
+    helper,
+};
+
+#[async_trait]
+pub trait UserUsecaseTrait: Send + Sync {
+    async fn create_user(&self, params: CreateUserUseParam) -> Result<i32, String>;
+    async fn get_list_user(
+        &self,
+        params: UserDomParam,
+    ) -> Result<(Vec<UserUseResponse>, i64), AppCode>;
 }
 
 pub struct UserUsecase {
-    db: DatabaseConnection,
+    user_domain: Arc<dyn UserDomainTrait>,
 }
 
-impl UserUsecase {
-    pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
+pub struct InitParam {
+    pub user_domain: Arc<dyn UserDomainTrait>,
+}
+
+pub fn init(init_param: InitParam) -> impl UserUsecaseTrait {
+    UserUsecase {
+        user_domain: init_param.user_domain,
     }
+}
 
-    pub async fn create_user(&self, params: CreateUserParams) -> Result<i32, String> {
-        // 1. Hash the password using the helper we just wrote
-        // Notice we call AuthUsecase::hash_password directly
-        let hashed_pwd = AuthUsecase::hash_password(&params.password)?;
+// --- Implementation blocks ---
 
-        // 2. Prepare Data
-        let new_user = user::ActiveModel {
-            name: Set(params.name),
-            email: Set(params.email),
-            hashed_password: Set(hashed_pwd),
-            status: Set(1),
-            ..Default::default()
+#[async_trait]
+impl UserUsecaseTrait for UserUsecase {
+    async fn create_user(&self, params: CreateUserUseParam) -> Result<i32, String> {
+        let hashed_pwd = helper::hash_password(&params.password).map_err(|e| e.to_string())?;
+
+        let repo_params = CreateUserDomParam {
+            name: params.name,
+            email: params.email,
+            hashed_password: hashed_pwd,
         };
 
-        // 3. Save to DB
-        let result = user::Entity::insert(new_user)
-            .exec(&self.db)
-            .await
-            .map_err(|e| e.to_string())?;
+        self.user_domain.create(repo_params).await
+    }
 
-        Ok(result.last_insert_id)
+    async fn get_list_user(
+        &self,
+        params: UserDomParam,
+    ) -> Result<(Vec<UserUseResponse>, i64), AppCode> {
+        let result = self.user_domain.get_list(params).await;
+
+        // This will change the Error AppError to AppCode instead
+        match result {
+            Ok((users, total)) => {
+                println!("The original users are: {:?}", &users);
+                let user_responses = users
+                    .into_iter()
+                    .map(|user| UserUseResponse {
+                        id: Some(user.id),
+                        email: Some(user.email),
+                    })
+                    .collect();
+
+                println!("The users are: {:?}", &user_responses);
+
+                Ok((user_responses, total))
+            }
+            Err(err) => Err(AppCode::from(err)),
+        }
     }
 }

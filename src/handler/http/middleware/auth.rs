@@ -6,7 +6,7 @@ use axum::{
 };
 use jsonwebtoken::{DecodingKey, Validation, decode};
 
-use crate::{state::AppState, usecase::auth::Claims}; // Import your Claims struct
+use crate::{entity::auth::Claims, state::AppState}; // Import your Claims struct
 
 // Custom Header extraction helper
 pub async fn auth_middleware(
@@ -33,7 +33,7 @@ pub async fn auth_middleware(
     // NOTE: You need to access the secret.
     // If you moved AuthUsecase logic, ensure you can access the 'jwt_secret' here.
     // For now, assuming we grab it from state.auth_usecase (you might need to make secret pub or add a getter)
-    let secret = &state.auth_usecase.jwt_secret;
+    let secret = &state.jwt_secret;
 
     let token_data = decode::<Claims>(
         token,

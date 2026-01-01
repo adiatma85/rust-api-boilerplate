@@ -881,6 +881,7 @@ name = "gemini-assisted-axum"
 version = "0.1.0"
 dependencies = [
  "argon2",
+ "async-trait",
  "axum",
  "chrono",
  "config",
@@ -888,6 +889,7 @@ dependencies = [
  "rand_core 0.9.3",
  "sea-orm",
  "serde",
+ "thiserror",
  "tokio",
  "utoipa",
  "utoipa-swagger-ui",

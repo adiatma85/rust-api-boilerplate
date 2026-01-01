@@ -1,6 +1,8 @@
-use sea_orm::entity::prelude::*;
+use sea_orm::{Condition, IntoActiveModel, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+
+use crate::entity::Filterable;
 
 // --- Model for the Database ---
 
@@ -26,6 +28,34 @@ pub enum Relation {}
 // This trait enables the "Active Record" behavior (save, delete, etc.)
 impl ActiveModelBehavior for ActiveModel {}
 
+// --- Structs that used in domain ---
+
+pub struct CreateUserDomParam {
+    pub name: String,
+    pub email: String,
+    pub hashed_password: String,
+}
+
+#[derive(Default, Debug)]
+pub struct UserDomParam {
+    pub id: Option<i32>,
+    pub email_eq: Option<String>,
+}
+
+// --- Structs that used in the usecase ---
+
+pub struct CreateUserUseParam {
+    pub name: String,
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Serialize, ToSchema, Debug)]
+pub struct UserUseResponse {
+    pub id: Option<i32>,
+    pub email: Option<String>,
+}
+
 // --- Public structs for the Request and Response (DTO) ---
 
 #[derive(Deserialize, ToSchema)]
@@ -44,4 +74,40 @@ pub struct LoginRequest {
 #[derive(Serialize, ToSchema)]
 pub struct LoginResponse {
     pub token: String,
+}
+
+// --- Helper Functions if needed ---
+
+impl Filterable for UserDomParam {
+    // This function replaces your 'qb.Build' logic
+    fn to_condition(&self) -> Condition {
+        // Condition::all() is equivalent to "WHERE 1=1" (AND logic)
+        // Condition::any() is equivalent to OR logic
+        let mut condition = Condition::all();
+
+        // 1. Exact Match (Equivalent to your standard tag handling)
+        if let Some(id) = self.id {
+            condition = condition.add(Column::Id.eq(id));
+        }
+
+        // 2 Exact match for the email
+        if let Some(email) = &self.email_eq {
+            condition = condition.add(Column::Email.eq(email.as_str()));
+        }
+
+        condition
+    }
+}
+
+// Map the Param to the DB ActiveModel
+// This is boilerplate, but you write it once and it guarantees type safety.
+impl IntoActiveModel<ActiveModel> for CreateUserDomParam {
+    fn into_active_model(self) -> ActiveModel {
+        ActiveModel {
+            email: sea_orm::Set(self.email),
+            name: sea_orm::Set(self.name),
+            // Don't set ID here, the DB handles auto-increment
+            ..Default::default()
+        }
+    }
 }
