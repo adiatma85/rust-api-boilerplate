@@ -12,10 +12,10 @@ make format-check
 
 # 2. Check
 echo ">> Running make check..."
-make check
+RUSTFLAGS="-D warnings" make check
 
 # 3. Lint
 echo ">> Running make lint..."
-make lint
+RUSTFLAGS="-D warnings" make lint
 
 echo "✅ All make targets passed! Committing..."

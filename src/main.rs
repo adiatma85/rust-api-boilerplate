@@ -60,7 +60,7 @@ async fn main() {
         .await
         .unwrap();
 
-    clean_up(db).await;
+    clean_up(CleanUpResources { db }).await;
 }
 
 // This is the function to make the application shutdown gracefully
@@ -91,7 +91,12 @@ async fn shutdown_signal() {
 }
 
 // Clean up resources that we run in here
-async fn clean_up(db: DatabaseConnection) {
+
+struct CleanUpResources {
+    db: DatabaseConnection,
+}
+
+async fn clean_up(params: CleanUpResources) {
     // --- CLEANUP PHASE ---
     // The code reaches here ONLY after the shutdown signal is received
     // and active HTTP requests have finished.
@@ -100,7 +105,7 @@ async fn clean_up(db: DatabaseConnection) {
 
     // Explicitly close the database connection
     // This ensures the connection pool is drained and closed properly
-    if let Err(err) = db.close().await {
+    if let Err(err) = params.db.close().await {
         eprintln!("Error closing database: {}", err);
     } else {
         println!("✅ Database connection closed successfully");
