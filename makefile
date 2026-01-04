@@ -40,3 +40,17 @@ sort-install:
 .PHONY: sort
 sort:
 	cargo sort
+
+.PHONY: prepare
+prepare:
+	# Installs target if not present (redundant if done in CI, but good for local)
+	rustup target add x86_64-unknown-linux-musl
+
+.PHONY: build-alpine
+build-alpine:
+	# Build release version using musl (static linking for Alpine)
+	# We output specifically to ./build/app to match your Dockerfile expectation
+	cargo build --release --target x86_64-unknown-linux-musl
+	mkdir -p ./build
+	# DO NOTE that release/<package-name-in-cargo-toml>
+	cp ./target/x86_64-unknown-linux-musl/release/gemini-assisted-axum ./build/app
