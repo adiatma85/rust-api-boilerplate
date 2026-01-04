@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sea_orm::{ActiveValue::Set, DatabaseConnection, EntityTrait};
 
 use crate::{
-    domain::helper::{fetch_list_2, fetch_one},
+    domain::helper::{fetch_list, fetch_one},
     entity::{
         error::AppError,
         response::Pagination,
@@ -61,7 +61,7 @@ impl UserDomainTrait for UserDomainImpl {
         &self,
         params: UserDomParam,
     ) -> Result<(Vec<user::Model>, Pagination), AppError> {
-        let (users, pagination) = fetch_list_2::<user::Entity, _, _>(&self.db, params)
+        let (users, pagination) = fetch_list::<user::Entity, _, _>(&self.db, params)
             .await
             .map_err(AppError::from)?;
 

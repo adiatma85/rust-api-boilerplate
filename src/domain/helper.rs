@@ -11,32 +11,7 @@ use crate::entity::{Filterable, Updatable, response::Pagination, util::Paginatab
 // E = The Entity (e.g., user::Entity)
 // M = The Model (e.g., user::Model)
 // F = The Filter Param (e.g., UserDomainParam)
-// pub async fn fetch_list<E, M, F>(
-//     db: &DatabaseConnection,
-//     filter: F,
-//     page: u64,
-//     limit: u64,
-// ) -> Result<(Vec<M>, u64), sea_orm::DbErr>
-// where
-//     E: EntityTrait<Model = M>,
-//     M: FromQueryResult + Sized + Send + Sync,
-//     F: Filterable,
-// {
-//     let condition = filter.to_condition();
-
-//     // 2. Call find on the Type "E" directly
-//     let query = E::find().filter(condition);
-
-//     let paginator = query.paginate(db, limit);
-//     let total = paginator.num_items().await?;
-//     let data = paginator.fetch_page(page).await?;
-
-//     Ok((data, total))
-// }
-
-#[allow(dead_code)]
-// Temporary for the fixing in the future. For now, we need to implement other generics function
-pub async fn fetch_list_2<E, M, F>(
+pub async fn fetch_list<E, M, F>(
     db: &DatabaseConnection,
     filter: F, // Clean signature!
 ) -> Result<(Vec<M>, Pagination), sea_orm::DbErr>
@@ -97,7 +72,6 @@ where
 }
 
 // Generic function to fetch EXACTLY ONE record
-#[allow(dead_code)]
 pub async fn fetch_one<E, M, F>(db: &DatabaseConnection, filter: F) -> Result<M, sea_orm::DbErr>
 where
     E: EntityTrait<Model = M>,
@@ -125,7 +99,6 @@ where
 // A = The ActiveModel (e.g., user::ActiveModel)
 // M = The Model (e.g., user::Model)
 // D = The Data Param (e.g., CreateUserParam)
-#[allow(dead_code)]
 pub async fn create_one<E, A, M, D>(db: &DatabaseConnection, data: D) -> Result<M, sea_orm::DbErr>
 where
     E: EntityTrait<Model = M>,
@@ -150,7 +123,6 @@ where
 // M = Model
 // F = Filter (to find the record)
 // U = Update DTO (containing new data)
-#[allow(dead_code)]
 pub async fn update_one<E, A, M, F, U>(
     db: &DatabaseConnection,
     filter: F,
