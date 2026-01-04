@@ -8,7 +8,7 @@ use axum::{
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::entity::response::{ApiResponse, AppCode};
+use crate::entity::response::{ApiResponse, AppCode, Pagination};
 
 // Define a struct to hold our "Request Context"
 #[derive(Clone)]
@@ -21,14 +21,14 @@ pub struct RequestContext {
 
 impl RequestContext {
     // Helper 1: Success Response
-    pub fn success<T>(self, code: AppCode, data: T) -> Response
+    pub fn success<T>(self, code: AppCode, data: T, pagination: Option<Pagination>) -> Response
     where
         T: Serialize,
     {
         ApiResponse::new(
             code,
             data,
-            None, // Assuming no pagination for standard success
+            pagination,
             &self.path,
             &self.method,
             &self.request_id,

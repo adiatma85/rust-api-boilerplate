@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::{
     domain::card::CardDomainTrait,
     entity::{
-        card::{self, CardUseParam, CreateCardUseParam, UpdateCardUseParam},
+        card::{self, CardDomParam, CreateCardUseParam, UpdateCardUseParam},
         response::AppCode,
     },
 };
@@ -14,12 +14,12 @@ use crate::{
 #[async_trait]
 pub trait CardUsecaseTrait: Send + Sync {
     async fn create(&self, create_param: CreateCardUseParam) -> Result<card::Model, AppCode>;
-    #[allow(dead_code)]
-    async fn get_list(&self, param: CardUseParam) -> Result<Vec<card::Model>, AppCode>;
+    async fn get(&self, param: CardDomParam) -> Result<card::Model, AppCode>;
+    async fn get_list(&self, param: CardDomParam) -> Result<Vec<card::Model>, AppCode>;
 
     // This need to be changed in the future
     async fn update_one(&self, update_param: UpdateCardUseParam) -> Result<card::Model, AppCode>;
-    async fn delete_one(&self, param: CardUseParam) -> Result<card::Model, AppCode>;
+    async fn delete_one(&self, param: CardDomParam) -> Result<card::Model, AppCode>;
 }
 
 pub struct CardUsecase {
@@ -53,15 +53,20 @@ impl CardUsecaseTrait for CardUsecase {
         Ok(result)
     }
 
-    async fn get_list(&self, param: CardUseParam) -> Result<Vec<card::Model>, AppCode> {
-        let card_dom_param = card::CardDomParam { id: param.id };
-        let (result, _total) = self
+    async fn get(&self, param: CardDomParam) -> Result<card::Model, AppCode> {
+        let result = self.card_domain.get(param).await.map_err(AppCode::from)?;
+
+        Ok(result)
+    }
+
+    async fn get_list(&self, param: CardDomParam) -> Result<Vec<card::Model>, AppCode> {
+        let (result, pagination) = self
             .card_domain
-            .get_list(card_dom_param)
+            .get_list(param)
             .await
             .map_err(AppCode::from)?;
 
-        println!("Total cards: {}", _total);
+        println!("Total cards: {:?}", pagination);
 
         Ok(result)
     }
@@ -69,6 +74,7 @@ impl CardUsecaseTrait for CardUsecase {
     async fn update_one(&self, update_param: UpdateCardUseParam) -> Result<card::Model, AppCode> {
         let dom_param = card::CardDomParam {
             id: Some(update_param.id),
+            ..Default::default()
         };
 
         let update_dom_param = card::CardDomUpdateParam {
@@ -85,8 +91,11 @@ impl CardUsecaseTrait for CardUsecase {
         Ok(result)
     }
 
-    async fn delete_one(&self, param: CardUseParam) -> Result<card::Model, AppCode> {
-        let dom_param = card::CardDomParam { id: param.id };
+    async fn delete_one(&self, param: CardDomParam) -> Result<card::Model, AppCode> {
+        let dom_param = card::CardDomParam {
+            id: param.id,
+            ..Default::default()
+        };
 
         let result = self
             .card_domain

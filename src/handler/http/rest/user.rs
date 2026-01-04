@@ -43,14 +43,14 @@ pub async fn create_user_handler(
     // Call the Usecase (Logic Layer)
     // We use 'state.user_usecase' which is the Arc<UserUsecase> we set up in main.rs
     match state.usecase.user.create_user(params).await {
-        Ok(user_id) => ctx.success(
-            AppCode::Success,
-            format!("User created successfully with ID {}", user_id),
-        ),
-        Err(e) => ctx.error(
-            AppCode::InternalServerError(e.clone()),
-            format!("Failed to create user: {}", e),
-        ),
+        Ok(user) => {
+            let user_response = UserUseResponse {
+                id: Some(user.id),
+                email: Some(user.email),
+            };
+            ctx.success(AppCode::Success, user_response, None)
+        }
+        Err(e) => ctx.error(e.clone(), format!("Failed to create user: {}", e)),
     }
 }
 
@@ -78,7 +78,7 @@ pub async fn login_handler(
     match state.usecase.auth.login(params).await {
         Ok(token) => {
             let resp = LoginResponse { token };
-            ctx.success(AppCode::Success, resp)
+            ctx.success(AppCode::Success, resp, None)
         }
         Err(e) => ctx.error(AppCode::Unauthorized, e.to_string()),
     }
@@ -104,15 +104,15 @@ pub async fn get_user_list_handler(
     let params = UserDomParam {
         id: Some(2),
         email_eq: None,
+        ..Default::default() // for now using default because it will be not used in the future yet
     };
 
     // Call UserUsecase
     match state.usecase.user.get_list_user(params).await {
-        Ok((users, total)) => {
-            println!("The total is: {}", total);
+        Ok((users, pagination)) => {
             let resp = users;
             println!("The users are: {:?}", &resp);
-            ctx.success(AppCode::Success, resp)
+            ctx.success(AppCode::Success, resp, Some(pagination))
         }
         Err(e) => ctx.error(AppCode::InternalServerError(e.to_string()), e.to_string()),
     }

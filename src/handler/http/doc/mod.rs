@@ -23,8 +23,10 @@ use crate::entity::{
 
         // Card Handler
         crate::handler::http::rest::card::create_card_handler,
+        crate::handler::http::rest::card::get_card_handler,
+        crate::handler::http::rest::card::get_card_list_handler,
         crate::handler::http::rest::card::update_card_status_handler,
-        crate::handler::http::rest::card::delete_card_handler
+        crate::handler::http::rest::card::delete_card_handler,
     ),
     components(
         schemas(CreateCardRequest, UpdateCardStatusRequest, RegisterRequest, LoginRequest, UserUseResponse)

@@ -10,14 +10,14 @@ use jsonwebtoken::{EncodingKey, Header, encode};
 
 use crate::{
     domain::user::UserDomainTrait,
-    entity::{self, auth::Claims},
+    entity::{self, auth::Claims, response::AppCode},
 }; // Import your User Entity
 
 // 3. The Usecase Struct
 
 #[async_trait]
 pub trait AuthUsecaseTrait: Send + Sync {
-    async fn login(&self, params: entity::auth::LoginParams) -> Result<String, String>;
+    async fn login(&self, params: entity::auth::LoginParams) -> Result<String, AppCode>;
 }
 
 pub struct AuthUsecase {
@@ -39,7 +39,7 @@ pub fn init(param: InitParam) -> impl AuthUsecaseTrait {
 
 #[async_trait]
 impl AuthUsecaseTrait for AuthUsecase {
-    async fn login(&self, params: entity::auth::LoginParams) -> Result<String, String> {
+    async fn login(&self, params: entity::auth::LoginParams) -> Result<String, AppCode> {
         let user_dom_param = crate::entity::user::UserDomParam {
             email_eq: Some(params.email),
             ..Default::default()
@@ -49,15 +49,15 @@ impl AuthUsecaseTrait for AuthUsecase {
             .user_domain
             .get_one(user_dom_param)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(AppCode::from)?;
 
-        let parsed_hash = PasswordHash::new(&user_model.hashed_password)
-            .map_err(|_| "Invalid password hash in DB")?;
+        let parsed_hash =
+            PasswordHash::new(&user_model.hashed_password).map_err(|_| AppCode::Unauthorized)?;
 
         // This could be written in the helper instead in here
         Argon2::default()
             .verify_password(params.password.as_bytes(), &parsed_hash)
-            .map_err(|_| "Invalid email or password")?;
+            .map_err(|_| AppCode::Unauthorized)?;
 
         // C. Generate JWT
         let expiration = Utc::now()
@@ -77,7 +77,7 @@ impl AuthUsecaseTrait for AuthUsecase {
             &claims,
             &EncodingKey::from_secret(self.jwt_secret.as_bytes()),
         )
-        .map_err(|e| e.to_string())?;
+        .map_err(|_| AppCode::Unauthorized)?;
 
         Ok(token)
     }
