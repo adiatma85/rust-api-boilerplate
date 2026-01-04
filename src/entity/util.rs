@@ -1,8 +1,9 @@
 use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
 
 // The raw query params coming from the URL
 // ?page=1&limit=15&disable_limit=true
-#[derive(Debug, Deserialize, Default, Clone)]
+#[derive(Debug, Deserialize, Default, Clone, IntoParams, ToSchema)]
 #[serde(default)] // Allows fields to be missing (uses defaults)
 pub struct PaginationParams {
     pub page: Option<u64>,

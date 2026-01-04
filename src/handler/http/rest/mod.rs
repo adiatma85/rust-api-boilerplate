@@ -4,7 +4,7 @@ pub mod util;
 
 use axum::{
     Router, middleware as axum_middleware,
-    routing::{delete, get, patch, post},
+    routing::{delete, get, post, put},
 };
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -14,7 +14,10 @@ use crate::{
         doc,
         middleware::{auth::auth_middleware, context::context_middleware},
         rest::{
-            card::{create_card_handler, delete_card_handler, update_card_status_handler},
+            card::{
+                create_card_handler, delete_card_handler, get_card_handler, get_card_list_handler,
+                update_card_status_handler,
+            },
             user::{create_user_handler, get_user_list_handler, login_handler},
             util::ping_handler,
         },
@@ -58,7 +61,9 @@ fn v1_protected_routes(state: AppState) -> Router<AppState> {
         .route("/users", get(get_user_list_handler))
         // Card Group
         .route("/cards", post(create_card_handler))
-        .route("/cards/{id}/status", patch(update_card_status_handler))
+        .route("/cards", get(get_card_list_handler))
+        .route("/cards/{id}", get(get_card_handler))
+        .route("/cards/{id}", put(update_card_status_handler))
         .route("/cards/{id}", delete(delete_card_handler))
         // Apply the auth middleware only to this sub-router
         .route_layer(axum_middleware::from_fn_with_state(

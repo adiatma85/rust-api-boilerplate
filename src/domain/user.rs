@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sea_orm::{ActiveValue::Set, DatabaseConnection, EntityTrait};
+use sea_orm::{ActiveValue::Set, DatabaseConnection};
 
 use crate::{
     domain::helper::{fetch_list, fetch_one},
@@ -14,7 +14,7 @@ use crate::{
 // "Send + Sync" is required so this trait can be shared across threads (Axum requirement)
 #[async_trait]
 pub trait UserDomainTrait: Send + Sync {
-    async fn create(&self, params: CreateUserDomParam) -> Result<i32, String>;
+    async fn create(&self, params: CreateUserDomParam) -> Result<user::Model, AppError>;
     async fn get_list(
         &self,
         params: UserDomParam,
@@ -40,7 +40,7 @@ pub fn init(param: InitParam) -> impl UserDomainTrait {
 // 2. Implement the Trait
 #[async_trait]
 impl UserDomainTrait for UserDomainImpl {
-    async fn create(&self, params: CreateUserDomParam) -> Result<i32, String> {
+    async fn create(&self, params: CreateUserDomParam) -> Result<user::Model, AppError> {
         let new_user = user::ActiveModel {
             name: Set(params.name),
             email: Set(params.email),
@@ -49,12 +49,11 @@ impl UserDomainTrait for UserDomainImpl {
             ..Default::default()
         };
 
-        let result = user::Entity::insert(new_user)
-            .exec(&self.db)
+        let result = crate::domain::helper::create_one(&self.db, new_user)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(AppError::from)?;
 
-        Ok(result.last_insert_id)
+        Ok(result)
     }
 
     async fn get_list(

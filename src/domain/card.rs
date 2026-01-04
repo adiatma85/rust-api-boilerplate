@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sea_orm::DatabaseConnection;
 
 use crate::{
-    domain::helper::{create_one, delete_one, fetch_list, update_many, update_one},
+    domain::helper::{create_one, delete_one, fetch_list, fetch_one, update_many, update_one},
     entity::{
         card::{self, CreateCardDomParam},
         error::AppError,
@@ -11,7 +11,6 @@ use crate::{
 };
 
 #[async_trait]
-#[allow(dead_code)]
 pub trait CardDomainTrait: Send + Sync {
     async fn create(&self, params: CreateCardDomParam) -> Result<card::Model, AppError>;
 
@@ -20,12 +19,15 @@ pub trait CardDomainTrait: Send + Sync {
         params: card::CardDomParam,
     ) -> Result<(Vec<card::Model>, Pagination), AppError>;
 
+    async fn get(&self, params: card::CardDomParam) -> Result<card::Model, AppError>;
+
     async fn update_one(
         &self,
         params: card::CardDomParam,
         data: card::CardDomUpdateParam,
     ) -> Result<card::Model, AppError>;
 
+    #[allow(dead_code)]
     async fn update_many(
         &self,
         params: card::CardDomParam,
@@ -69,6 +71,14 @@ impl CardDomainTrait for CardDomainImpl {
             .map_err(AppError::from)?;
 
         Ok((cards, pagination))
+    }
+
+    async fn get(&self, params: card::CardDomParam) -> Result<card::Model, AppError> {
+        let card = fetch_one::<card::Entity, _, _>(&self.db, params)
+            .await
+            .map_err(AppError::from)?;
+
+        Ok(card)
     }
 
     async fn update_one(

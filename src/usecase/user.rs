@@ -6,14 +6,14 @@ use crate::{
     domain::user::UserDomainTrait,
     entity::{
         response::{AppCode, Pagination},
-        user::{CreateUserDomParam, CreateUserUseParam, UserDomParam, UserUseResponse},
+        user::{self, CreateUserDomParam, CreateUserUseParam, UserDomParam, UserUseResponse},
     },
     helper,
 };
 
 #[async_trait]
 pub trait UserUsecaseTrait: Send + Sync {
-    async fn create_user(&self, params: CreateUserUseParam) -> Result<i32, String>;
+    async fn create_user(&self, params: CreateUserUseParam) -> Result<user::Model, AppCode>;
     async fn get_list_user(
         &self,
         params: UserDomParam,
@@ -38,8 +38,8 @@ pub fn init(init_param: InitParam) -> impl UserUsecaseTrait {
 
 #[async_trait]
 impl UserUsecaseTrait for UserUsecase {
-    async fn create_user(&self, params: CreateUserUseParam) -> Result<i32, String> {
-        let hashed_pwd = helper::hash_password(&params.password).map_err(|e| e.to_string())?;
+    async fn create_user(&self, params: CreateUserUseParam) -> Result<user::Model, AppCode> {
+        let hashed_pwd = helper::hash_password(&params.password).map_err(AppCode::from)?;
 
         let repo_params = CreateUserDomParam {
             name: params.name,
@@ -47,7 +47,10 @@ impl UserUsecaseTrait for UserUsecase {
             hashed_password: hashed_pwd,
         };
 
-        self.user_domain.create(repo_params).await
+        self.user_domain
+            .create(repo_params)
+            .await
+            .map_err(AppCode::from)
     }
 
     async fn get_list_user(

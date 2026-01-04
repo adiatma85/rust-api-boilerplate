@@ -1,6 +1,6 @@
 use axum::{
     Extension, // Required to get the Auth Token Claims
-    extract::{Json, Path, State},
+    extract::{Json, Path, Query, State},
     response::IntoResponse,
 };
 
@@ -12,6 +12,7 @@ use crate::{
             UpdateCardUseParam,
         },
         response::AppCode,
+        util::PaginationParams,
     },
     handler::http::middleware::context::RequestContext,
     state::AppState,
@@ -50,6 +51,79 @@ pub async fn create_card_handler(
         Ok(model) => ctx.success(
             AppCode::Success,
             format!("Card created with model: {:?}", model),
+            None,
+        ),
+        Err(e) => ctx.error(e.clone(), e.to_string()),
+    }
+}
+
+/// Get a card by ID
+#[utoipa::path(
+    get,
+    path = "/api/v1/cards/{id}",
+    tag = "Cards",
+    params(
+        ("id" = i32, Path, description = "ID of the card to get")
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = StatusCode::OK, description = "Card fetched successfully", body = String),
+        (status = StatusCode::NOT_FOUND, description = "Card not found", body = String),
+        (status = StatusCode::INTERNAL_SERVER_ERROR, description = "Internal Server Error", body = String)
+    )
+)]
+pub async fn get_card_handler(
+    State(state): State<AppState>,
+    Path(id): Path<i32>, // Extract ID from URL (/cards/:id)
+    Extension(ctx): Extension<RequestContext>,
+) -> impl IntoResponse {
+    let card_param = CardDomParam {
+        id: Some(id),
+        ..Default::default()
+    };
+    match state.usecase.card.get(card_param).await {
+        Ok(model) => ctx.success(
+            AppCode::Success,
+            format!("Card fetched with model: {:?}", model),
+            None,
+        ),
+        Err(e) => ctx.error(e.clone(), e.to_string()),
+    }
+}
+
+/// Get a list of cards
+#[utoipa::path(
+    get,
+    path = "/api/v1/cards",
+    tag = "Cards",
+    params(
+        CardDomParam,
+        PaginationParams,
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = StatusCode::OK, description = "Card list fetched successfully", body = String),
+        (status = StatusCode::INTERNAL_SERVER_ERROR, description = "Internal Server Error", body = String)
+    )
+)]
+pub async fn get_card_list_handler(
+    State(state): State<AppState>,
+    Extension(ctx): Extension<RequestContext>,
+    Query(card_param): Query<CardDomParam>,
+    Query(pagination_param): Query<PaginationParams>,
+) -> impl IntoResponse {
+    // Assign the pagination in here
+    let mut params = card_param;
+    params.pagination = pagination_param;
+
+    match state.usecase.card.get_list(params).await {
+        Ok(models) => ctx.success(
+            AppCode::Success,
+            format!("Card list fetched with models: {:?}", models),
             None,
         ),
         Err(e) => ctx.error(e.clone(), e.to_string()),

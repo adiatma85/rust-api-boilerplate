@@ -1,6 +1,6 @@
 use sea_orm::{Condition, IntoActiveModel, entity::prelude::*};
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::entity::{
     Filterable, Updatable, card,
@@ -51,7 +51,8 @@ pub struct CreateCardDomParam {
     pub description: Option<String>,
 }
 
-#[derive(Default, Debug, Deserialize)]
+#[derive(Default, Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct CardDomParam {
     pub id: Option<i32>,
     pub ids: Option<Vec<i32>>,
@@ -60,7 +61,8 @@ pub struct CardDomParam {
 
     // Flatten allows ?page=1 to work at the root level
     // instead of ?pagination[page]=1
-    #[serde(flatten)]
+    // #[serde(flatten)]
+    #[serde(skip)]
     pub pagination: PaginationParams,
 }
 

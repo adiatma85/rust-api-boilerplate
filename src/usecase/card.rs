@@ -14,7 +14,7 @@ use crate::{
 #[async_trait]
 pub trait CardUsecaseTrait: Send + Sync {
     async fn create(&self, create_param: CreateCardUseParam) -> Result<card::Model, AppCode>;
-    #[allow(dead_code)]
+    async fn get(&self, param: CardDomParam) -> Result<card::Model, AppCode>;
     async fn get_list(&self, param: CardDomParam) -> Result<Vec<card::Model>, AppCode>;
 
     // This need to be changed in the future
@@ -53,14 +53,16 @@ impl CardUsecaseTrait for CardUsecase {
         Ok(result)
     }
 
+    async fn get(&self, param: CardDomParam) -> Result<card::Model, AppCode> {
+        let result = self.card_domain.get(param).await.map_err(AppCode::from)?;
+
+        Ok(result)
+    }
+
     async fn get_list(&self, param: CardDomParam) -> Result<Vec<card::Model>, AppCode> {
-        let card_dom_param = card::CardDomParam {
-            id: param.id,
-            ..Default::default()
-        };
         let (result, pagination) = self
             .card_domain
-            .get_list(card_dom_param)
+            .get_list(param)
             .await
             .map_err(AppCode::from)?;
 

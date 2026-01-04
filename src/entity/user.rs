@@ -1,6 +1,6 @@
 use sea_orm::{Condition, IntoActiveModel, entity::prelude::*};
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::entity::{
     Filterable,
@@ -39,7 +39,7 @@ pub struct CreateUserDomParam {
     pub hashed_password: String,
 }
 
-#[derive(Default, Debug, Deserialize)]
+#[derive(Default, Debug, Deserialize, IntoParams)]
 pub struct UserDomParam {
     pub id: Option<i32>,
     pub ids: Option<Vec<i32>>,
