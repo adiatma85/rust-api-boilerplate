@@ -1,0 +1,111 @@
+name: "Staging: Build & Deploy"
+
+concurrency:
+  group: build-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+# REQUIRED: This gives the token permission to push packages and create releases
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build_deploy:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 1. Setup Rust Environment
+      # We add the 'musl' target so the binary works on Alpine Linux
+      - name: Setup Rust environment
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      # 2. Install Musl Tools (Required for linking on Ubuntu)
+      - name: Install Musl Tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      # 3. Build Rust App (Updated Command)
+      - name: Build Rust App for Docker
+        id: build
+        run: |
+          # If you have private dependencies, configure git credentials here
+          git config --global url.git@github.com:.insteadOf https://github.com/
+
+          # Using the updated Makefile (see below)
+          make prepare
+          make build-alpine
+
+      - name: Get Latest Tag
+        id: latest-tag
+        run: |
+          git config --global --add safe.directory /github/workspace
+          echo "tag=$(git tag -l | sed '/-/!{s/$/_/;}' | sort -V | sed 's/_$//' | tail -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate New Bumped Version
+        uses: DelosAqua/action-bump-semver@v1.1.0
+        id: bump-semver
+        with:
+          current_version: ${{ steps.latest-tag.outputs.tag }}
+          level: prerelease
+          preid: rc
+
+      - name: Check Semver Format
+        run: |
+          # Assuming utils/semver exists as per your note
+          chmod +x ./utils/semver
+          ./utils/semver -v ${{ steps.bump-semver.outputs.new_version }}
+          echo "${{ steps.bump-semver.outputs.new_version }}" >> version.txt
+
+      # 4. Login to GitHub Container Registry (GHCR) instead of AWS
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 5. Build and Push to GHCR
+      - name: Build and Push Image to GHCR
+        id: push-image
+        env:
+          # GHCR requires lowercase names. This converts Owner/Repo to lowercase.
+          IMAGE_NAME: ghcr.io/${{ github.repository }}
+          VERSION: ${{ steps.bump-semver.outputs.new_version }}
+        run: |
+          # Convert image name to lowercase just in case
+          LOWER_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          FULL_IMAGE="$LOWER_IMAGE_NAME:$VERSION"
+
+          docker buildx build . -f ./utils/Dockerfile -t $FULL_IMAGE \
+            --build-arg SERVICE_VERSION=$VERSION \
+            --provenance false --push
+
+          echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v8
+
+      - name: Create Release Notes
+        uses: DelosAqua/upload-release-action@v3
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.bump-semver.outputs.new_version }}
+          release_name: ${{ steps.bump-semver.outputs.new_version }}
+          file: version.txt
+          prerelease: true
+          make_latest: false
+          target_commit: ${{ steps.branch-name.outputs.current_branch }}
+          generate_release_notes: true
