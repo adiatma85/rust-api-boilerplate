@@ -2,7 +2,10 @@ use sea_orm::{Condition, IntoActiveModel, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::entity::{Filterable, Updatable, card};
+use crate::entity::{
+    Filterable, Updatable, card,
+    util::{Paginatable, PaginationParams},
+};
 
 // --- Model for the Database ---
 
@@ -48,10 +51,17 @@ pub struct CreateCardDomParam {
     pub description: Option<String>,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Deserialize)]
 pub struct CardDomParam {
     pub id: Option<i32>,
+    pub ids: Option<Vec<i32>>,
+    pub user_id: Option<i32>,
     // --- Other attributes is not added in here for now
+
+    // Flatten allows ?page=1 to work at the root level
+    // instead of ?pagination[page]=1
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 #[derive(Default, Debug)]
@@ -63,16 +73,12 @@ pub struct CardDomUpdateParam {
 }
 
 // --- Structs that used in Usecase ---
+#[derive(Default, Debug)]
 #[allow(dead_code)]
 pub struct CreateCardUseParam {
     pub title: String,
     pub description: Option<String>,
     pub user_id: i32,
-}
-
-#[derive(Default, Debug)]
-pub struct CardUseParam {
-    pub id: Option<i32>,
 }
 
 // This will be changed
@@ -110,6 +116,23 @@ impl IntoActiveModel<ActiveModel> for CreateCardDomParam {
     }
 }
 
+// Implement the Trait
+impl Paginatable for CardDomParam {
+    fn get_page(&self) -> u64 {
+        // Default to page 0 or 1 depending on your preference (SeaOrm uses 0-index usually)
+        self.pagination.page.unwrap_or(0)
+    }
+
+    fn get_limit(&self) -> u64 {
+        // Default to 10 if not specified
+        self.pagination.limit.unwrap_or(10)
+    }
+
+    fn is_limit_disabled(&self) -> bool {
+        self.pagination.disable_limit
+    }
+}
+
 impl Filterable for CardDomParam {
     fn to_condition(&self) -> sea_orm::Condition {
         // Condition::all() is equivalent to "WHERE 1=1" (AND logic)
@@ -119,6 +142,16 @@ impl Filterable for CardDomParam {
         // 1. Exact Match (Equivalent to your standard tag handling)
         if let Some(id) = self.id {
             condition = condition.add(Column::Id.eq(id));
+        }
+
+        // 2. Exact Match (Equivalent to your standard tag handling)
+        if let Some(ids) = &self.ids {
+            condition = condition.add(Column::Id.is_in(ids.iter().copied()));
+        }
+
+        // 3. User ID Match
+        if let Some(user_id) = self.user_id {
+            condition = condition.add(Column::UserId.eq(user_id));
         }
 
         condition

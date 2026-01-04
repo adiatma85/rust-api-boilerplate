@@ -20,5 +20,5 @@ use crate::{
     )
 )]
 pub async fn ping_handler(Extension(ctx): Extension<RequestContext>) -> impl IntoResponse {
-    ctx.success(AppCode::Success, "PONG!")
+    ctx.success(AppCode::Success, "PONG!", None)
 }

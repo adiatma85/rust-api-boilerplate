@@ -2,7 +2,10 @@ use sea_orm::{Condition, IntoActiveModel, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::entity::Filterable;
+use crate::entity::{
+    Filterable,
+    util::{Paginatable, PaginationParams},
+};
 
 // --- Model for the Database ---
 
@@ -36,10 +39,16 @@ pub struct CreateUserDomParam {
     pub hashed_password: String,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Deserialize)]
 pub struct UserDomParam {
     pub id: Option<i32>,
+    pub ids: Option<Vec<i32>>,
     pub email_eq: Option<String>,
+
+    // Flatten allows ?page=1 to work at the root level
+    // instead of ?pagination[page]=1
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 // --- Structs that used in the usecase ---
@@ -90,12 +99,34 @@ impl Filterable for UserDomParam {
             condition = condition.add(Column::Id.eq(id));
         }
 
-        // 2 Exact match for the email
+        // 2. Exact Match (Equivalent to your standard tag handling)
+        if let Some(ids) = &self.ids {
+            condition = condition.add(Column::Id.is_in(ids.iter().copied()));
+        }
+
+        // 3 Exact match for the email
         if let Some(email) = &self.email_eq {
             condition = condition.add(Column::Email.eq(email.as_str()));
         }
 
         condition
+    }
+}
+
+// Implement the Trait
+impl Paginatable for UserDomParam {
+    fn get_page(&self) -> u64 {
+        // Default to page 0 or 1 depending on your preference (SeaOrm uses 0-index usually)
+        self.pagination.page.unwrap_or(0)
+    }
+
+    fn get_limit(&self) -> u64 {
+        // Default to 10 if not specified
+        self.pagination.limit.unwrap_or(10)
+    }
+
+    fn is_limit_disabled(&self) -> bool {
+        self.pagination.disable_limit
     }
 }
 

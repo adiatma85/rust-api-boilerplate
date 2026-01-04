@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::{
     domain::user::UserDomainTrait,
     entity::{
-        response::AppCode,
+        response::{AppCode, Pagination},
         user::{CreateUserDomParam, CreateUserUseParam, UserDomParam, UserUseResponse},
     },
     helper,
@@ -17,7 +17,7 @@ pub trait UserUsecaseTrait: Send + Sync {
     async fn get_list_user(
         &self,
         params: UserDomParam,
-    ) -> Result<(Vec<UserUseResponse>, i64), AppCode>;
+    ) -> Result<(Vec<UserUseResponse>, Pagination), AppCode>;
 }
 
 pub struct UserUsecase {
@@ -53,12 +53,12 @@ impl UserUsecaseTrait for UserUsecase {
     async fn get_list_user(
         &self,
         params: UserDomParam,
-    ) -> Result<(Vec<UserUseResponse>, i64), AppCode> {
+    ) -> Result<(Vec<UserUseResponse>, Pagination), AppCode> {
         let result = self.user_domain.get_list(params).await;
 
         // This will change the Error AppError to AppCode instead
         match result {
-            Ok((users, total)) => {
+            Ok((users, pagination)) => {
                 println!("The original users are: {:?}", &users);
                 let user_responses = users
                     .into_iter()
@@ -70,7 +70,7 @@ impl UserUsecaseTrait for UserUsecase {
 
                 println!("The users are: {:?}", &user_responses);
 
-                Ok((user_responses, total))
+                Ok((user_responses, pagination))
             }
             Err(err) => Err(AppCode::from(err)),
         }

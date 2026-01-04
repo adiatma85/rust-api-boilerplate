@@ -8,7 +8,8 @@ use crate::{
     entity::{
         auth::Claims,
         card::{
-            CreateCardRequest, CreateCardUseParam, UpdateCardStatusRequest, UpdateCardUseParam,
+            CardDomParam, CreateCardRequest, CreateCardUseParam, UpdateCardStatusRequest,
+            UpdateCardUseParam,
         },
         response::AppCode,
     },
@@ -49,6 +50,7 @@ pub async fn create_card_handler(
         Ok(model) => ctx.success(
             AppCode::Success,
             format!("Card created with model: {:?}", model),
+            None,
         ),
         Err(e) => ctx.error(e.clone(), e.to_string()),
     }
@@ -85,7 +87,7 @@ pub async fn update_card_status_handler(
     };
 
     match state.usecase.card.update_one(params).await {
-        Ok(_) => ctx.success(AppCode::Success, "Card status updated"),
+        Ok(_) => ctx.success(AppCode::Success, "Card status updated", None),
         Err(e) => ctx.error(e.clone(), e.to_string()),
     }
 }
@@ -115,10 +117,13 @@ pub async fn delete_card_handler(
     match state
         .usecase
         .card
-        .delete_one(crate::entity::card::CardUseParam { id: Some(id) })
+        .delete_one(CardDomParam {
+            id: Some(id),
+            ..Default::default()
+        })
         .await
     {
-        Ok(_) => ctx.success(AppCode::Success, "Card deleted successfully"),
+        Ok(_) => ctx.success(AppCode::Success, "Card deleted successfully", None),
         Err(e) => ctx.error(e.clone(), e.to_string()),
     }
 }

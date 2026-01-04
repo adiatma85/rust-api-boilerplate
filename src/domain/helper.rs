@@ -3,7 +3,7 @@ use sea_orm::{
     PaginatorTrait, QueryFilter,
 };
 
-use crate::entity::{Filterable, Updatable, response::Pagination};
+use crate::entity::{Filterable, Updatable, response::Pagination, util::Paginatable};
 
 // --- General Helper function is below ---
 
@@ -11,76 +11,89 @@ use crate::entity::{Filterable, Updatable, response::Pagination};
 // E = The Entity (e.g., user::Entity)
 // M = The Model (e.g., user::Model)
 // F = The Filter Param (e.g., UserDomainParam)
-pub async fn fetch_list<E, M, F>(
-    db: &DatabaseConnection,
-    filter: F,
-    page: u64,
-    limit: u64,
-) -> Result<(Vec<M>, u64), sea_orm::DbErr>
-where
-    E: EntityTrait<Model = M>,
-    M: FromQueryResult + Sized + Send + Sync,
-    F: Filterable,
-{
-    let condition = filter.to_condition();
+// pub async fn fetch_list<E, M, F>(
+//     db: &DatabaseConnection,
+//     filter: F,
+//     page: u64,
+//     limit: u64,
+// ) -> Result<(Vec<M>, u64), sea_orm::DbErr>
+// where
+//     E: EntityTrait<Model = M>,
+//     M: FromQueryResult + Sized + Send + Sync,
+//     F: Filterable,
+// {
+//     let condition = filter.to_condition();
 
-    // 2. Call find on the Type "E" directly
-    let query = E::find().filter(condition);
+//     // 2. Call find on the Type "E" directly
+//     let query = E::find().filter(condition);
 
-    let paginator = query.paginate(db, limit);
-    let total = paginator.num_items().await?;
-    let data = paginator.fetch_page(page).await?;
+//     let paginator = query.paginate(db, limit);
+//     let total = paginator.num_items().await?;
+//     let data = paginator.fetch_page(page).await?;
 
-    Ok((data, total))
-}
+//     Ok((data, total))
+// }
 
 #[allow(dead_code)]
 // Temporary for the fixing in the future. For now, we need to implement other generics function
 pub async fn fetch_list_2<E, M, F>(
     db: &DatabaseConnection,
-    filter: F,
-    page: u64,
-    limit: u64,
+    filter: F, // Clean signature!
 ) -> Result<(Vec<M>, Pagination), sea_orm::DbErr>
 where
     E: EntityTrait<Model = M>,
     M: FromQueryResult + Sized + Send + Sync,
-    F: Filterable,
+    F: Filterable + Paginatable, // We now require the Paginatable trait
 {
     // 1. Build Condition
     let condition = filter.to_condition();
 
-    // 2. Build Query
+    // 2. Build Base Query
     let query = E::find().filter(condition);
 
-    // 3. Create Paginator
-    let paginator = query.paginate(db, limit);
+    // 3. Handle Branching Logic (Unlimited vs Paginated)
+    if filter.is_limit_disabled() {
+        // --- BRANCH A: FETCH ALL ---
 
-    // 4. Execute Queries
-    // We run the COUNT query first
-    let total_elements = paginator.num_items().await?;
+        let data = query.all(db).await?;
+        let total_elements = data.len() as u64;
 
-    // We run the SELECT data query second
-    let data = paginator.fetch_page(page).await?;
+        let pagination = Pagination {
+            current_page: 0,
+            current_elements: total_elements,
+            total_pages: 1, // Only 1 page exists when limit is disabled
+            total_elements,
+            sort_by: vec![],
+        };
 
-    // 5. Calculate Total Pages Manually
-    // (Optimization: doing this in Rust saves a DB round-trip vs calling paginator.num_pages().await)
-    let total_pages = if limit > 0 {
-        total_elements.div_ceil(limit)
+        Ok((data, pagination))
     } else {
-        0
-    };
+        // --- BRANCH B: PAGINATED ---
 
-    // 6. Build Pagination Struct
-    let pagination = Pagination {
-        current_page: page,
-        current_elements: data.len() as u64,
-        total_pages,
-        total_elements,
-        sort_by: vec![], // Ignored for now as requested
-    };
+        let page = filter.get_page();
+        let limit = filter.get_limit();
 
-    Ok((data, pagination))
+        // Safety: If limit is sent as 0 by accident, force a default to avoid DB panic
+        let safe_limit = if limit == 0 { 10 } else { limit };
+
+        let paginator = query.paginate(db, safe_limit);
+
+        let total_elements = paginator.num_items().await?;
+        let data = paginator.fetch_page(page).await?;
+
+        // Optimization: Manual calc
+        let total_pages = total_elements.div_ceil(safe_limit);
+
+        let pagination = Pagination {
+            current_page: page,
+            current_elements: data.len() as u64,
+            total_pages,
+            total_elements,
+            sort_by: vec![],
+        };
+
+        Ok((data, pagination))
+    }
 }
 
 // Generic function to fetch EXACTLY ONE record
