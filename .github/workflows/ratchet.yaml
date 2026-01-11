@@ -1,0 +1,18 @@
+name: Ratchet Audit
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+jobs:
+  check-pins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # ratchet:actions/checkout@v6
+
+      - name: Check for unpinned GitHub Actions
+        run: |
+          make ensure-bin-dir
+          make install-ratchet
+          make ratchet-check
