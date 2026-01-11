@@ -2,6 +2,7 @@
 # Versions to install
 AGE_VERSION := v1.2.0
 SOPS_VERSION := v3.9.1
+RATCHET_VERSION := 0.11.4
 
 # Environment for the Age File
 # Check if the SOPS_AGE_KEY environment variable is set or not, if set, then use that.
@@ -39,12 +40,15 @@ AGE_URL := https://github.com/FiloSottile/age/releases/download/$(AGE_VERSION)/a
 # Note: Sops naming convention uses dots (linux.amd64)
 SOPS_URL := https://github.com/getsops/sops/releases/download/$(SOPS_VERSION)/sops-$(SOPS_VERSION).$(OS).$(ARCH)
 
+# Ratchet uses tarballs
+RATCHET_URL := https://github.com/sethvargo/ratchet/releases/download/v$(RATCHET_VERSION)/ratchet_$(RATCHET_VERSION)_$(OS)_$(ARCH).tar.gz
+
 # --- Targets ---
 
-.PHONY: install-tools clean-tools ensure-bin-dir
+.PHONY: install-tools clean-tools ensure-bin-dir install-ratchet
 
 # Main target to run
-install-tools: ensure-bin-dir install-age install-sops
+install-tools: ensure-bin-dir install-age install-sops install-ratchet
 	@echo "✅ Installation complete! Executables are in $(BIN_DIR)"
 	@echo "👉 usage: $(BIN_DIR)/sops --version"
 
@@ -63,6 +67,15 @@ install-sops:
 	@echo "⬇️  Downloading sops $(SOPS_VERSION) for $(OS)/$(ARCH)..."
 	@curl -L -o $(BIN_DIR)/sops $(SOPS_URL)
 	@chmod +x $(BIN_DIR)/sops
+
+install-ratchet:
+	@echo "⬇️  Downloading ratchet v$(RATCHET_VERSION) for $(OS)/$(ARCH)..."
+	@curl -L -o $(BIN_DIR)/ratchet.tar.gz $(RATCHET_URL)
+	@echo "📦 Extracting ratchet..."
+	@tar -xzf $(BIN_DIR)/ratchet.tar.gz -C $(BIN_DIR) ratchet
+	@rm $(BIN_DIR)/ratchet.tar.gz
+	@chmod +x $(BIN_DIR)/ratchet
+	@echo "✨ Ratchet installed."
 
 clean-tools:
 	@rm -rf $(BIN_DIR)/age $(BIN_DIR)/age-keygen $(BIN_DIR)/sops
@@ -116,6 +129,34 @@ conf-local: edit-conf-local
 conf-staging: edit-conf-staging
 conf-prod: edit-conf-prod
 
+.PHONY: ratchet-update ratchet-check ratchet-upgrade ratchet-unpin
+
+# Updates (pins) all your workflow files to the latest SHAs
+ratchet-update:
+	@echo "🔒 Pinning GitHub Actions to latest SHAs..."
+	@# We use \( -name ... -o -name ... \) to find both .yml and .yaml
+	@find .github/workflows \( -name "*.yml" -o -name "*.yaml" \) -exec $(BIN_DIR)/ratchet pin {} \;
+	@echo "✅ Workflows pinned successfully."
+
+# Checks if workflows are unpinned (fails the build if they are)
+ratchet-check:
+	@echo "🕵️  Checking for unpinned actions..."
+	@# We use 'xargs' here because standard 'find -exec' swallows exit codes.
+	@# 'xargs' ensures that if ratchet fails on ANY file, the make command fails.
+	@find .github/workflows \( -name "*.yml" -o -name "*.yaml" \) -print0 | xargs -0 -n1 $(BIN_DIR)/ratchet lint
+	@echo "✅ All actions are securely pinned."
+
+# Always check the compatibility
+ratchet-upgrade:
+	@echo "🚀 Upgrading GitHub Actions to NEWEST versions (Major version bumps possible)..."
+	@find .github/workflows \( -name "*.yml" -o -name "*.yaml" \) -exec $(BIN_DIR)/ratchet upgrade {} \;
+	@echo "⚠️  Workflows upgraded. Please manually verify compatibility!"
+
+ratchet-unpin:
+	@echo "🔓 Unpinning workflows..."
+	@find .github/workflows \( -name "*.yml" -o -name "*.yaml" \) -exec $(BIN_DIR)/ratchet unpin {} \;
+	@echo "✅ Workflows unpinned."
+
 # --- Daily Usage commands
 
 .PHONY: lint
@@ -135,7 +176,7 @@ format-lint: lint
 	cargo +nightly fmt
 
 .PHONY: check
-check:
+check: ratchet-check
 	cargo check
 
 .PHONY: clean
