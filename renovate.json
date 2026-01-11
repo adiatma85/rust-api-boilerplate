@@ -1,32 +1,54 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base", "helpers:pinGitHubActionDigests"],
-  "labels": ["dependencies", "renovate"],
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
   "rangeStrategy": "bump",
-  "postUpdateOptions": ["gomodTidy", "npmDedupe"],
+  "postUpdateOptions": [
+    "gomodTidy",
+    "npmDedupe"
+  ],
   "ignoreDeps": [],
   "packageRules": [
     {
       "description": "Group all GitHub Action pin updates into a single PR to reduce noise",
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "github-actions-pins"
     },
     {
       "description": "Group minor and patch updates for Rust crates to prevent PR flooding",
-      "matchManagers": ["cargo"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": [
+        "cargo"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "rust-minor-updates",
       "automerge": false
     },
     {
       "description": "Separate PRs for Major updates (breaking changes) so you check them carefully",
-      "matchManagers": ["cargo"],
-      "matchUpdateTypes": ["major"],
+      "matchManagers": [
+        "cargo"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "groupName": null
     }
   ],
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 5am on monday"]
+    "schedule": [
+      "before 5am on monday"
+    ]
   }
 }
