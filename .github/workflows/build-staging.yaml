@@ -109,20 +109,33 @@ jobs:
 
           echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
 
-      # Get the branch name
-      - name: Get branch name
-        id: branch-name
-        uses: tj-actions/branch-names@dde14ac574a8b9b1cedc59a1cf312788af43d8d8 # ratchet:tj-actions/branch-names@v8
-
-      #  Build Changelog
-      - name: Create Release Notes
-        uses: DelosAqua/upload-release-action@d451dbb3c0a76fed831d9cfd04202be60a97acd3 # ratchet:DelosAqua/upload-release-action@v3
+      # 7. Generate Tidy Changelog
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@439f79b5b5428107c7688c1d2b0e8bacc9b8792c # ratchet:mikepenz/release-changelog-builder-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.bump-semver.outputs.new_version }}
-          release_name: ${{ steps.bump-semver.outputs.new_version }}
-          file: version.txt
+          configurationJson: |
+            {
+              "pr_template": "- #{{TITLE}} [[#{{NUMBER}}](#{{URL}})]"
+            }
+
+      # 8. Create Release
+      - name: Create Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # ratchet:softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.bump-semver.outputs.new_version }}
+          name: ${{ steps.bump-semver.outputs.new_version }}
           prerelease: true
-          make_latest: false
-          target_commit: ${{ steps.branch-name.outputs.current_branch }}
-          generate_release_notes: true
+          body: |
+            ${{ steps.build_changelog.outputs.changelog }}
+
+            ---
+            ### 🐳 Docker Image
+            ```bash
+            docker pull ${{ steps.push-image.outputs.docker_image }}
+            ```
+          files: |
+            version.txt
+            ${{ env.ASSET_NAME }}
