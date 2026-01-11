@@ -109,6 +109,11 @@ jobs:
 
           echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
 
+      # Get the branch name
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@dde14ac574a8b9b1cedc59a1cf312788af43d8d8 # ratchet:tj-actions/branch-names@v8
+
       #  Build Changelog
       - name: Create Release Notes
         uses: DelosAqua/upload-release-action@d451dbb3c0a76fed831d9cfd04202be60a97acd3 # ratchet:DelosAqua/upload-release-action@v3
