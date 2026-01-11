@@ -116,7 +116,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          mode: "COMMIT"
+          configurationJson: |
+            {
+              "pr_template": "- #{{TITLE}} [[#{{ID}}]({{URL}})]"
+            }
 
       # 8. Create Release
       - name: Create Release
