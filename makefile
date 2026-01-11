@@ -180,7 +180,7 @@ check: ratchet-check
 	cargo check
 
 .PHONY: clean
-clean:
+clean: clean-tools
 	cargo clean
 
 .PHONY: run

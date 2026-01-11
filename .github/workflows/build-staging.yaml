@@ -118,7 +118,7 @@ jobs:
         with:
           configurationJson: |
             {
-              "pr_template": "- #{{TITLE}} [[#{{ID}}]({{URL}})]"
+              "pr_template": "- #{{TITLE}} [[#{{NUMBER}}]({{URL}})]"
             }
 
       # 8. Create Release
