@@ -10,10 +10,10 @@ on:
     branches:
       - main
 
-# REQUIRED: This gives the token permission to push packages and create releases
 permissions:
   contents: write
   packages: write
+  pull-requests: read # Required for the changelog builder to read PR details
 
 jobs:
   build_deploy:
@@ -25,32 +25,33 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 1. Setup Rust Environment
-      # We add the 'musl' target so the binary works on Alpine Linux
+      # 1. Setup Rust
       - name: Setup Rust environment
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
 
-      # 2. Install Musl Tools (Required for linking on Ubuntu)
+      # 2. Install Tools
       - name: Install Musl Tools
         run: sudo apt-get update && sudo apt-get install -y musl-tools
 
-      # 3. Build Rust App (Updated Command)
-      - name: Build Rust App for Docker
+      # 3. Build Binary
+      - name: Build Rust App
         id: build
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
-          # If you have private dependencies, configure git credentials here
           git config --global url.git@github.com:.insteadOf https://github.com/
-
-          # Using the updated Makefile (see below)
           make install-tools
           make decrypt-conf-staging
           make prepare
           make build-alpine
 
+          # TIP: Assuming your binary is named after your repo or defined in Cargo.toml.
+          # We'll find it in the target directory.
+          echo "BINARY_PATH=$(find target/x86_64-unknown-linux-musl/release -maxdepth 1 -type f -executable | head -n 1)" >> $GITHUB_ENV
+
+      # 4. Versioning
       - name: Get Latest Tag
         id: latest-tag
         run: |
@@ -65,14 +66,16 @@ jobs:
           level: prerelease
           preid: rc
 
-      - name: Check Semver Format
-        run: |
-          # Assuming utils/semver exists as per your note
-          chmod +x ./utils/semver
-          ./utils/semver -v ${{ steps.bump-semver.outputs.new_version }}
-          echo "${{ steps.bump-semver.outputs.new_version }}" >> version.txt
+      - name: Save Version File
+        run: echo "${{ steps.bump-semver.outputs.new_version }}" > version.txt
 
-      # 4. Login to GitHub Container Registry (GHCR) instead of AWS
+      # 5. Archive the Binary for Release (Opinion: Highly Recommended)
+      - name: Archive Binary
+        run: |
+          # Compress the binary found in step 3 to make it easy to download
+          tar -czvf my-app-linux-musl.tar.gz -C $(dirname ${{ env.BINARY_PATH }}) $(basename ${{ env.BINARY_PATH }})
+
+      # 6. Docker Build & Push
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -80,36 +83,50 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 5. Build and Push to GHCR
-      - name: Build and Push Image to GHCR
+      - name: Build and Push Image
         id: push-image
         env:
-          # GHCR requires lowercase names. This converts Owner/Repo to lowercase.
           IMAGE_NAME: ghcr.io/${{ github.repository }}
           VERSION: ${{ steps.bump-semver.outputs.new_version }}
         run: |
-          # Convert image name to lowercase just in case
           LOWER_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
           FULL_IMAGE="$LOWER_IMAGE_NAME:$VERSION"
 
+          # Build and push
           docker buildx build . -f ./utils/Dockerfile -t $FULL_IMAGE \
             --build-arg SERVICE_VERSION=$VERSION \
             --provenance false --push
 
           echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
 
-      - name: Get branch name
-        id: branch-name
-        uses: tj-actions/branch-names@v8
-
-      - name: Create Release Notes
-        uses: DelosAqua/upload-release-action@v3
+      # 7. Generate Tidy Changelog (Fixes the "Long Link" issue)
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.bump-semver.outputs.new_version }}
-          release_name: ${{ steps.bump-semver.outputs.new_version }}
-          file: version.txt
+          # This mode automatically groups PRs by labels (feature, fix, chore)
+          # and formats links as #123 instead of full URLs.
+          mode: "COMMIT"
+
+      # 8. Create Release
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.bump-semver.outputs.new_version }}
+          name: ${{ steps.bump-semver.outputs.new_version }}
           prerelease: true
-          make_latest: false
-          target_commit: ${{ steps.branch-name.outputs.current_branch }}
-          generate_release_notes: true
+          # Here we combine the Tidy Changelog + The Docker Link
+          body: |
+            ${{ steps.build_changelog.outputs.changelog }}
+
+            ---
+            ### 🐳 Docker Image
+            Run this specific version:
+            ```bash
+            docker pull ${{ steps.push-image.outputs.docker_image }}
+            ```
+          files: |
+            version.txt
+            my-app-linux-musl.tar.gz
