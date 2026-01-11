@@ -1,4 +1,4 @@
-name: "Staging: Build & Deploy"
+name: "Staging: Release"
 
 concurrency:
   group: build-deploy-${{ github.ref }}
@@ -39,11 +39,15 @@ jobs:
       # 3. Build Rust App (Updated Command)
       - name: Build Rust App for Docker
         id: build
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           # If you have private dependencies, configure git credentials here
           git config --global url.git@github.com:.insteadOf https://github.com/
 
           # Using the updated Makefile (see below)
+          make install-tools
+          make decrypt-conf-staging
           make prepare
           make build-alpine
 

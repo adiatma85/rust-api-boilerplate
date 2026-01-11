@@ -1,9 +1,119 @@
+# --- Configuration ---
+# Versions to install
+AGE_VERSION := v1.2.0
+SOPS_VERSION := v3.9.1
+
+# Environment for the Age File
+# Check if the SOPS_AGE_KEY environment variable is set or not, if set, then use that.
+# If not then we are using SOPS_AGE_KEY_FILE
+ifndef SOPS_AGE_KEY
+    export SOPS_AGE_KEY_FILE := $(shell pwd)/.secrets/keys.txt
+endif
+
+# Directory to place executables
+BIN_DIR := ./bin
+
+# Define a default, but allow the environment to override it
+EDITOR ?= vim
+
+# --- Auto-Detection ---
+# Detect OS (linux/darwin)
+OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+
+# Detect Architecture and map to standard names (amd64/arm64)
+ARCH := $(shell uname -m)
+ifeq ($(ARCH),x86_64)
+    ARCH := amd64
+else ifeq ($(ARCH),aarch64)
+    ARCH := arm64
+endif
+
+# --- Download URLs ---
+# Age uses tarballs
+AGE_URL := https://github.com/FiloSottile/age/releases/download/$(AGE_VERSION)/age-$(AGE_VERSION)-$(OS)-$(ARCH).tar.gz
+
+# Sops uses standalone binaries
+# Note: Sops naming convention uses dots (linux.amd64)
+SOPS_URL := https://github.com/getsops/sops/releases/download/$(SOPS_VERSION)/sops-$(SOPS_VERSION).$(OS).$(ARCH)
+
+# --- Targets ---
+
+.PHONY: install-tools clean-tools ensure-bin-dir
+
+# Main target to run
+install-tools: ensure-bin-dir install-age install-sops
+	@echo "✅ Installation complete! Executables are in $(BIN_DIR)"
+	@echo "👉 usage: $(BIN_DIR)/sops --version"
+
+ensure-bin-dir:
+	@mkdir -p $(BIN_DIR)
+
+install-age:
+	@echo "⬇️  Downloading age $(AGE_VERSION) for $(OS)/$(ARCH)..."
+	@curl -L -o $(BIN_DIR)/age.tar.gz $(AGE_URL)
+	@echo "📦 Extracting age..."
+	@tar -xzf $(BIN_DIR)/age.tar.gz -C $(BIN_DIR) --strip-components=1 age/age age/age-keygen
+	@rm $(BIN_DIR)/age.tar.gz
+	@chmod +x $(BIN_DIR)/age $(BIN_DIR)/age-keygen
+
+install-sops:
+	@echo "⬇️  Downloading sops $(SOPS_VERSION) for $(OS)/$(ARCH)..."
+	@curl -L -o $(BIN_DIR)/sops $(SOPS_URL)
+	@chmod +x $(BIN_DIR)/sops
+
+clean-tools:
+	@rm -rf $(BIN_DIR)/age $(BIN_DIR)/age-keygen $(BIN_DIR)/sops
+	@echo "🧹 Cleaned up executables."
+
+
+# --- Initialization commands ---
+
 # Run this once after cloning the repo
+# This command is used to initialize hooks
 .PHONY: init
-init:
+init: install-tools
 	git config core.hooksPath .githooks
 	chmod +x .githooks/pre-commit
 	@echo "✅ Git hooks configured successfully!"
+
+# --- Configuration build commands
+# Define the path to your sops binary
+SOPS := ./bin/sops
+CFG_DIR := ./etc/cfg
+
+decrypt-conf-%:
+	@echo "🔓 Decrypting configuration for environment: $*"
+	@$(SOPS) --decrypt $(CFG_DIR)/conf.$*.enc.json > $(CFG_DIR)/conf.json
+
+.PHONY: decrypt-local decrypt-staging decrypt-prod
+
+decrypt-local: decrypt-conf-local
+decrypt-staging: decrypt-conf-staging
+decrypt-prod: decrypt-conf-production
+
+encrypt-conf-%:
+	@echo "🔒 Encrypting current conf.json into environment: $*"
+	@$(SOPS) --encrypt $(CFG_DIR)/conf.json > $(CFG_DIR)/conf.$*.enc.json
+	@echo "✅ Saved to $(CFG_DIR)/conf.$*.enc.json"
+
+.PHONY: encrypt-local encrypt-staging encrypt-pro
+
+encrypt-local: encrypt-conf-local
+encrypt-staging: encrypt-conf-staging
+encrypt-prod: encrypt-conf-production
+
+edit-conf-%:
+	@echo "📝 Opening $* config using $(EDITOR)..."
+	@EDITOR="$(EDITOR)" $(SOPS) $(CFG_DIR)/conf.$*.enc.json
+	@echo "✅ Changes encrypted and saved."
+
+.PHONY: conf-local conf-staging conf-prod
+
+conf-local: edit-conf-local
+conf-staging: edit-conf-staging
+conf-prod: edit-conf-prod
+
+# --- Daily Usage commands
 
 .PHONY: lint
 lint:
@@ -40,6 +150,9 @@ sort-install:
 .PHONY: sort
 sort:
 	cargo sort
+
+
+# --- Github Action builds commands
 
 .PHONY: prepare
 prepare:

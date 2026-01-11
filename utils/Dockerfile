@@ -22,6 +22,5 @@ RUN apk add --no-cache \
 COPY ./build/app ./app
 # COPY ./docs docs
 COPY ./etc/cfg etc/cfg
-# COPY ./etc/tpl etc/tpl
 
 CMD [ "./app" ]
