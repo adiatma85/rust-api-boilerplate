@@ -118,7 +118,31 @@ jobs:
         with:
           configurationJson: |
             {
-              "pr_template": "- #{{TITLE}} [[#{{NUMBER}}](#{{URL}})]"
+              "pr_template": "- #{{TITLE}} [[#{{NUMBER}}](#{{URL}})]",
+              "label_extractor": [
+                {
+                  "pattern": "^\\[(.*?)\\]",
+                  "target": "$1"
+                }
+              ],
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feature", "Feature", "feat"]
+                },
+                {
+                  "title": "## 🐛 Fixes",
+                  "labels": ["fix", "Fix", "bug", "Bug"]
+                },
+                {
+                  "title": "## 🧹 Chores",
+                  "labels": ["chore", "Chore"]
+                },
+                {
+                  "title": "## 📦 Other Changes",
+                  "labels": []
+                }
+              ]
             }
 
       # 8. Create Release
