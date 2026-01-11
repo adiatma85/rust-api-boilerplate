@@ -1,0 +1,174 @@
+name: "Production: Release"
+
+concurrency:
+  group: build-deploy-prod
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      semver_level:
+        description: "Select Release Level"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+
+jobs:
+  build_deploy:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # ratchet:actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # 1. Setup Rust
+      - name: Setup Rust environment
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # ratchet:dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      # 2. Install Musl Tools
+      - name: Install Musl Tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      # 3. Build Binary & Prepare Config
+      - name: Build Rust App
+        id: build
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          git config --global url.git@github.com:.insteadOf https://github.com/
+
+          # Install tools (sops/age)
+          make install-tools
+
+          # Decrypt config
+          make decrypt-conf-production
+
+          # Compile
+          make build-alpine
+
+      # 4. Versioning
+      - name: Get Latest Tag
+        id: latest-tag
+        run: |
+          git config --global --add safe.directory /github/workspace
+          echo "tag=$(git tag -l | sed '/-/!{s/$/_/;}' | sort -V | sed 's/_$//' | tail -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Check Prerelease Version
+        run: |
+          if ! [[ ${{ steps.latest-tag.outputs.tag }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+\-rc\.[0-9]+$ ]]; then
+            echo "Invalid Prerelease Version"
+            exit 1
+          fi
+
+      - name: Generate New Bumped Version
+        uses: DelosAqua/action-bump-semver@557bede145fab753bb171f168ad7385981f9f0e3 # ratchet:DelosAqua/action-bump-semver@v1.1.0
+        id: bump-semver
+        with:
+          current_version: ${{ steps.latest-tag.outputs.tag }}
+          level: ${{ github.event.inputs.versionbump }}
+
+      - name: Save Version File
+        run: echo "${{ steps.bump-semver.outputs.new_version }}" > version.txt
+
+      # 5. Archive Binary for Release
+      - name: Archive Binary
+        run: |
+          BINARY_NAME="gemini-assisted-axum"
+          RELEASE_ASSET_NAME="$BINARY_NAME-${{ steps.bump-semver.outputs.new_version }}-linux-musl.tar.gz"
+
+          tar -czvf $RELEASE_ASSET_NAME -C ./target/x86_64-unknown-linux-musl/release $BINARY_NAME
+
+          echo "ASSET_NAME=$RELEASE_ASSET_NAME" >> $GITHUB_ENV
+
+      # 6. Docker Build & Push
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # ratchet:docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Image
+        id: push-image
+        env:
+          IMAGE_NAME: ghcr.io/${{ github.repository }}
+          VERSION: ${{ steps.bump-semver.outputs.new_version }}
+        run: |
+          LOWER_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          FULL_IMAGE="$LOWER_IMAGE_NAME:$VERSION"
+          LATEST_IMAGE="$LOWER_IMAGE_NAME:latest"
+
+          docker buildx build . -f ./utils/Dockerfile -t $FULL_IMAGE -t $LATEST_IMAGE \
+            --build-arg SERVICE_VERSION=$VERSION \
+            --provenance false --push
+
+          echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
+
+      # 7. Generate Tidy Changelog
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@439f79b5b5428107c7688c1d2b0e8bacc9b8792c # ratchet:mikepenz/release-changelog-builder-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          configurationJson: |
+            {
+              "pr_template": "- #{{TITLE}} [[#{{NUMBER}}](#{{URL}})]",
+              "label_extractor": [
+                {
+                  "pattern": "^\\[(.*?)\\]",
+                  "target": "$1"
+                }
+              ],
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feature", "Feature", "feat"]
+                },
+                {
+                  "title": "## 🐛 Fixes",
+                  "labels": ["fix", "Fix", "bug", "Bug"]
+                },
+                {
+                  "title": "## 🧹 Chores",
+                  "labels": ["chore", "Chore"]
+                },
+                {
+                  "title": "## 📦 Other Changes",
+                  "labels": []
+                }
+              ]
+            }
+
+      # 8. Create Release
+      - name: Create Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # ratchet:softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.bump-semver.outputs.new_version }}
+          name: ${{ steps.bump-semver.outputs.new_version }}
+          prerelease: false # Set to false for Production
+          make_latest: true
+          body: |
+            ${{ steps.build_changelog.outputs.changelog }}
+
+            ---
+            ### 🐳 Docker Image
+            ```bash
+            docker pull ${{ steps.push-image.outputs.docker_image }}
+            ```
+          files: |
+            version.txt
+            ${{ env.ASSET_NAME }}
