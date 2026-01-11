@@ -15,6 +15,8 @@ use crate::{config::app_settings::AppSettings, handler::http::rest};
 
 const CONFIG_PATH: &str = "./etc/cfg/conf.json";
 
+// We need to search about envx
+
 #[tokio::main]
 async fn main() {
     let app_settings = match AppSettings::new(CONFIG_PATH) {

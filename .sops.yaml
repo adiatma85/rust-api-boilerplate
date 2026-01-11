@@ -1,0 +1,5 @@
+creation_rules:
+  # Check if the file path matches this regex
+  - path_regex: etc/cfg/.*\.json$
+    # PASTE YOUR PUBLIC KEY (age1...) BELOW
+    age: "age1h7ah9v0pmgm0u9lm2rwuudmu54ejdt6huvzg2d633g4kz8gy2vzs2cewgc"

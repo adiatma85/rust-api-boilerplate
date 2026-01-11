@@ -32,7 +32,14 @@
 Thumbs.db
 
 # Custom rules
-/etc/cfg/*
+/etc/cfg/conf.json
 
 # Docker Storage
 /env/storage/*
+
+# Additional Binary
+/bin/
+
+# Ignore the secrets
+# This will be shared with another developer
+.secrets/
