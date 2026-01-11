@@ -78,7 +78,7 @@ jobs:
         id: bump-semver
         with:
           current_version: ${{ steps.latest-tag.outputs.tag }}
-          level: ${{ github.event.inputs.versionbump }}
+          level: ${{ inputs.semver_level }}
 
       - name: Save Version File
         run: echo "${{ steps.bump-semver.outputs.new_version }}" > version.txt
