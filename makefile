@@ -10,6 +10,9 @@ ifndef SOPS_AGE_KEY
     export SOPS_AGE_KEY_FILE := $(shell pwd)/.secrets/keys.txt
 endif
 
+# APP Configuration
+APP_NAME := gemini-assisted-axum
+
 # Directory to place executables
 BIN_DIR := ./bin
 
@@ -166,4 +169,4 @@ build-alpine:
 	cargo build --release --target x86_64-unknown-linux-musl
 	mkdir -p ./build
 	# DO NOTE that release/<package-name-in-cargo-toml>
-	cp ./target/x86_64-unknown-linux-musl/release/gemini-assisted-axum ./build/app
+	cp ./target/x86_64-unknown-linux-musl/release/$(APP_NAME) ./build/app

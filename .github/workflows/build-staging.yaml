@@ -13,7 +13,7 @@ on:
 permissions:
   contents: write
   packages: write
-  pull-requests: read # Required for the changelog builder to read PR details
+  pull-requests: read
 
 jobs:
   build_deploy:
@@ -26,30 +26,33 @@ jobs:
           fetch-depth: 0
 
       # 1. Setup Rust
+      # We use dtolnay's action because it's faster than rustup in CI
       - name: Setup Rust environment
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
 
-      # 2. Install Tools
+      # 2. Install Musl Tools (Required for your make build-alpine)
       - name: Install Musl Tools
         run: sudo apt-get update && sudo apt-get install -y musl-tools
 
-      # 3. Build Binary
+      # 3. Build Binary & Prepare Config
+      # We run the exact make commands so the ./build/app folder is created
       - name: Build Rust App
         id: build
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           git config --global url.git@github.com:.insteadOf https://github.com/
-          make install-tools
-          make decrypt-conf-staging
-          make prepare
-          make build-alpine
 
-          # TIP: Assuming your binary is named after your repo or defined in Cargo.toml.
-          # We'll find it in the target directory.
-          echo "BINARY_PATH=$(find target/x86_64-unknown-linux-musl/release -maxdepth 1 -type f -executable | head -n 1)" >> $GITHUB_ENV
+          # Install tools (sops/age) required for decryption
+          make install-tools
+
+          # Decrypt config (Creating ./etc/cfg/conf.json)
+          make decrypt-conf-staging
+
+          # Compile and move binary to ./build/app
+          make build-alpine
 
       # 4. Versioning
       - name: Get Latest Tag
@@ -69,11 +72,17 @@ jobs:
       - name: Save Version File
         run: echo "${{ steps.bump-semver.outputs.new_version }}" > version.txt
 
-      # 5. Archive the Binary for Release (Opinion: Highly Recommended)
+      # 5. Archive Binary for Release
+      # We take the original named binary from target/, not the generic 'app' from build/
       - name: Archive Binary
         run: |
-          # Compress the binary found in step 3 to make it easy to download
-          tar -czvf my-app-linux-musl.tar.gz -C $(dirname ${{ env.BINARY_PATH }}) $(basename ${{ env.BINARY_PATH }})
+          BINARY_NAME="gemini-assisted-axum"
+          RELEASE_ASSET_NAME="$BINARY_NAME-${{ steps.bump-semver.outputs.new_version }}-linux-musl.tar.gz"
+
+          # Create a tarball containing the binary
+          tar -czvf $RELEASE_ASSET_NAME -C ./target/x86_64-unknown-linux-musl/release $BINARY_NAME
+
+          echo "ASSET_NAME=$RELEASE_ASSET_NAME" >> $GITHUB_ENV
 
       # 6. Docker Build & Push
       - name: Login to GitHub Container Registry
@@ -92,22 +101,21 @@ jobs:
           LOWER_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
           FULL_IMAGE="$LOWER_IMAGE_NAME:$VERSION"
 
-          # Build and push
+          # Note: We rely on step 3 having created ./build/app and ./etc/cfg/conf.json
+          # Dockerfile context is '.' so it sees the ./build folder
           docker buildx build . -f ./utils/Dockerfile -t $FULL_IMAGE \
             --build-arg SERVICE_VERSION=$VERSION \
             --provenance false --push
 
           echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
 
-      # 7. Generate Tidy Changelog (Fixes the "Long Link" issue)
+      # 7. Generate Tidy Changelog
       - name: Build Changelog
         id: build_changelog
         uses: mikepenz/release-changelog-builder-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # This mode automatically groups PRs by labels (feature, fix, chore)
-          # and formats links as #123 instead of full URLs.
           mode: "COMMIT"
 
       # 8. Create Release
@@ -117,16 +125,14 @@ jobs:
           tag_name: ${{ steps.bump-semver.outputs.new_version }}
           name: ${{ steps.bump-semver.outputs.new_version }}
           prerelease: true
-          # Here we combine the Tidy Changelog + The Docker Link
           body: |
             ${{ steps.build_changelog.outputs.changelog }}
 
             ---
             ### 🐳 Docker Image
-            Run this specific version:
             ```bash
             docker pull ${{ steps.push-image.outputs.docker_image }}
             ```
           files: |
             version.txt
-            my-app-linux-musl.tar.gz
+            ${{ env.ASSET_NAME }}
