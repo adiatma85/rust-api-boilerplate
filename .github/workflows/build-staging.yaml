@@ -64,7 +64,7 @@ jobs:
         with:
           version_format: "v${major}.${minor}.${patch}-rc.${increment}"
           bump_each_commit: true
-          tag_prefix: ""
+          tag_prefix: "v"
           search_commit_body: true
 
       - name: Save Version File
