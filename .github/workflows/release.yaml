@@ -54,7 +54,7 @@ jobs:
         id: bump-semver
         with:
           # Production format: Clean x.y.z (no -rc suffix)
-          version_format: "${major}.${minor}.${patch}"
+          version_format: "v${major}.${minor}.${patch}"
           # Defines that your tags start with "v" (e.g. v1.0.0)
           tag_prefix: "v"
           # Scans commit history to determine if it's Major/Minor/Patch
