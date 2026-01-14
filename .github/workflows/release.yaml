@@ -1,21 +1,16 @@
 name: "Production: Release"
 
+env:
+  BINARY_NAME: "gemini-assisted-axum"
+
 concurrency:
   group: build-deploy-prod
   cancel-in-progress: true
 
 on:
+  # We keep the manual trigger so you decide WHEN to release,
+  # but we remove the INPUTS because the commits decide the version now.
   workflow_dispatch:
-    inputs:
-      semver_level:
-        description: "Select Release Level"
-        required: true
-        default: "patch"
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
 
 permissions:
   contents: write
@@ -49,45 +44,31 @@ jobs:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           git config --global url.git@github.com:.insteadOf https://github.com/
-
-          # Install tools (sops/age)
           make install-tools
-
-          # Decrypt config
           make decrypt-conf-production
-
-          # Compile
           make build-alpine
 
-      # 4. Versioning
-      - name: Get Latest Tag
-        id: latest-tag
-        run: |
-          git config --global --add safe.directory /github/workspace
-          echo "tag=$(git tag -l | sed '/-/!{s/$/_/;}' | sort -V | sed 's/_$//' | tail -1)" >> "$GITHUB_OUTPUT"
-
-      - name: Check Prerelease Version
-        run: |
-          if ! [[ ${{ steps.latest-tag.outputs.tag }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+\-rc\.[0-9]+$ ]]; then
-            echo "Invalid Prerelease Version"
-            exit 1
-          fi
-
-      - name: Generate New Bumped Version
-        uses: DelosAqua/action-bump-semver@557bede145fab753bb171f168ad7385981f9f0e3 # ratchet:DelosAqua/action-bump-semver@v1.1.0
+      # 4. Versioning (AUTOMATED)
+      - name: Calculate Next Version
+        uses: paulhatch/semantic-version@v5.4.0
         id: bump-semver
         with:
-          current_version: ${{ steps.latest-tag.outputs.tag }}
-          level: ${{ inputs.semver_level }}
+          # Production format: Clean x.y.z (no -rc suffix)
+          version_format: "${major}.${minor}.${patch}"
+          # Defines that your tags start with "v" (e.g. v1.0.0)
+          tag_prefix: "v"
+          # Scans commit history to determine if it's Major/Minor/Patch
+          search_commit_body: true
+          # For production, we bump ONCE based on all changes since the last tag
+          bump_each_commit: false
 
       - name: Save Version File
-        run: echo "${{ steps.bump-semver.outputs.new_version }}" > version.txt
+        run: echo "${{ steps.bump-semver.outputs.version }}" > version.txt
 
       # 5. Archive Binary for Release
       - name: Archive Binary
         run: |
-          BINARY_NAME="gemini-assisted-axum"
-          RELEASE_ASSET_NAME="$BINARY_NAME-${{ steps.bump-semver.outputs.new_version }}-linux-musl.tar.gz"
+          RELEASE_ASSET_NAME="$BINARY_NAME-${{ steps.bump-semver.outputs.version }}-linux-musl.tar.gz"
 
           tar -czvf $RELEASE_ASSET_NAME -C ./target/x86_64-unknown-linux-musl/release $BINARY_NAME
 
@@ -105,7 +86,7 @@ jobs:
         id: push-image
         env:
           IMAGE_NAME: ghcr.io/${{ github.repository }}
-          VERSION: ${{ steps.bump-semver.outputs.new_version }}
+          VERSION: ${{ steps.bump-semver.outputs.version }}
         run: |
           LOWER_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
           FULL_IMAGE="$LOWER_IMAGE_NAME:$VERSION"
@@ -157,9 +138,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # ratchet:softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.bump-semver.outputs.new_version }}
-          name: ${{ steps.bump-semver.outputs.new_version }}
-          prerelease: false # Set to false for Production
+          tag_name: ${{ steps.bump-semver.outputs.version }}
+          name: ${{ steps.bump-semver.outputs.version }}
+          prerelease: false
           make_latest: true
           body: |
             ${{ steps.build_changelog.outputs.changelog }}

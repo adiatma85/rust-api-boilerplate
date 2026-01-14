@@ -1,5 +1,8 @@
 name: "Staging: Release"
 
+env:
+  BINARY_NAME: "gemini-assisted-axum"
+
 concurrency:
   group: build-deploy-${{ github.ref }}
   cancel-in-progress: true
@@ -55,33 +58,25 @@ jobs:
           make build-alpine
 
       # 4. Versioning
-      - name: Get Latest Tag
-        id: latest-tag
-        run: |
-          git config --global --add safe.directory /github/workspace
-          echo "tag=$(git tag -l | sed '/-/!{s/$/_/;}' | sort -V | sed 's/_$//' | tail -1)" >> "$GITHUB_OUTPUT"
-
       - name: Generate New Bumped Version
-        uses: DelosAqua/action-bump-semver@557bede145fab753bb171f168ad7385981f9f0e3 # ratchet:DelosAqua/action-bump-semver@v1.1.0
+        uses: paulhatch/semantic-version@v5.4.0
         id: bump-semver
         with:
-          current_version: ${{ steps.latest-tag.outputs.tag }}
-          level: prerelease
-          preid: rc
+          version_format: "${major}.${minor}.${patch}-rc.${increment}"
+          bump_each_commit: true
+          tag_prefix: ""
+          search_commit_body: true
 
       - name: Save Version File
-        run: echo "${{ steps.bump-semver.outputs.new_version }}" > version.txt
+        run: echo "${{ steps.bump-semver.outputs.version }}" > version.txt
 
       # 5. Archive Binary for Release
       # We take the original named binary from target/, not the generic 'app' from build/
       - name: Archive Binary
         run: |
-          BINARY_NAME="gemini-assisted-axum"
-          RELEASE_ASSET_NAME="$BINARY_NAME-${{ steps.bump-semver.outputs.new_version }}-linux-musl.tar.gz"
+          RELEASE_ASSET_NAME="$BINARY_NAME-${{ steps.bump-semver.outputs.version }}-linux-musl.tar.gz"
 
-          # Create a tarball containing the binary
           tar -czvf $RELEASE_ASSET_NAME -C ./target/x86_64-unknown-linux-musl/release $BINARY_NAME
-
           echo "ASSET_NAME=$RELEASE_ASSET_NAME" >> $GITHUB_ENV
 
       # 6. Docker Build & Push
@@ -96,7 +91,7 @@ jobs:
         id: push-image
         env:
           IMAGE_NAME: ghcr.io/${{ github.repository }}
-          VERSION: ${{ steps.bump-semver.outputs.new_version }}
+          VERSION: ${{ steps.bump-semver.outputs.version }}
         run: |
           LOWER_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
           FULL_IMAGE="$LOWER_IMAGE_NAME:$VERSION"
@@ -149,7 +144,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # ratchet:softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.bump-semver.outputs.new_version }}
+          tag_name: ${{ steps.bump-semver.outputs.version }}
           name: ${{ steps.bump-semver.outputs.new_version }}
           prerelease: true
           body: |
