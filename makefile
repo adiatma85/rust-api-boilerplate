@@ -32,23 +32,22 @@ else ifeq ($(ARCH),aarch64)
     ARCH := arm64
 endif
 
-# --- Download URLs ---
+# --- Download URLs for Tools ---
 # Age uses tarballs
 AGE_URL := https://github.com/FiloSottile/age/releases/download/$(AGE_VERSION)/age-$(AGE_VERSION)-$(OS)-$(ARCH).tar.gz
 
 # Sops uses standalone binaries
-# Note: Sops naming convention uses dots (linux.amd64)
 SOPS_URL := https://github.com/getsops/sops/releases/download/$(SOPS_VERSION)/sops-$(SOPS_VERSION).$(OS).$(ARCH)
 
 # Ratchet uses tarballs
 RATCHET_URL := https://github.com/sethvargo/ratchet/releases/download/v$(RATCHET_VERSION)/ratchet_$(RATCHET_VERSION)_$(OS)_$(ARCH).tar.gz
 
-# --- Targets ---
+# --- Tools ---
 
-.PHONY: install-tools clean-tools ensure-bin-dir install-ratchet
+.PHONY: install-tools clean-tools ensure-bin-dir install-ratchet sort-install
 
 # Main target to run
-install-tools: ensure-bin-dir install-age install-sops install-ratchet
+install-tools: ensure-bin-dir install-age install-sops install-ratchet sort-install
 	@echo "✅ Installation complete! Executables are in $(BIN_DIR)"
 	@echo "👉 usage: $(BIN_DIR)/sops --version"
 
@@ -77,6 +76,9 @@ install-ratchet:
 	@chmod +x $(BIN_DIR)/ratchet
 	@echo "✨ Ratchet installed."
 
+sort-install:
+	cargo install cargo-sort@2.0.2
+
 clean-tools:
 	@rm -rf $(BIN_DIR)/age $(BIN_DIR)/age-keygen $(BIN_DIR)/sops
 	@echo "🧹 Cleaned up executables."
@@ -85,7 +87,7 @@ clean-tools:
 # --- Initialization commands ---
 
 # Run this once after cloning the repo
-# This command is used to initialize hooks
+# This is used to hooks initialization and other tools that related to projects
 .PHONY: init
 init: install-tools
 	git config core.hooksPath .githooks
@@ -187,14 +189,9 @@ clean: clean-tools
 run:
 	cargo run
 
-.PHONY: sort-install
-sort-install:
-	cargo install cargo-sort@2.0.2
-
 .PHONY: sort
 sort:
 	cargo sort
-
 
 # --- Github Action builds commands
 
