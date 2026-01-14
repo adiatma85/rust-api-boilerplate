@@ -62,7 +62,7 @@ jobs:
         uses: paulhatch/semantic-version@a8f8f59fd7f0625188492e945240f12d7ad2dca3 # ratchet:paulhatch/semantic-version@v5.4.0
         id: bump-semver
         with:
-          version_format: "${major}.${minor}.${patch}-rc.${increment}"
+          version_format: "v${major}.${minor}.${patch}-rc.${increment}"
           bump_each_commit: true
           tag_prefix: "v"
           search_commit_body: true
