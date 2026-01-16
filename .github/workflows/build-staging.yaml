@@ -59,13 +59,17 @@ jobs:
 
       # 4. Versioning
       - name: Generate New Bumped Version
-        uses: paulhatch/semantic-version@a8f8f59fd7f0625188492e945240f12d7ad2dca3 # ratchet:paulhatch/semantic-version@v5.4.0
+        uses: paulhatch/semantic-version@a8f8f59fd7f0625188492e945240f12d7ad2dca3
         id: bump-semver
         with:
           version_format: "v${major}.${minor}.${patch}-rc.${increment}"
           bump_each_commit: true
           tag_prefix: "v"
           search_commit_body: true
+          # Regex matches NOTHING, so version numbers never bump, only RC increments
+          major_pattern: "(?!.*)"
+          minor_pattern: "(?!.*)"
+          patch_pattern: "(?!.*)"
 
       - name: Save Version File
         run: echo "${{ steps.bump-semver.outputs.version }}" > version.txt
@@ -107,10 +111,14 @@ jobs:
       # 7. Generate Tidy Changelog
       - name: Build Changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@439f79b5b5428107c7688c1d2b0e8bacc9b8792c # ratchet:mikepenz/release-changelog-builder-action@v6
+        uses: mikepenz/release-changelog-builder-action@439f79b5b5428107c7688c1d2b0e8bacc9b8792c
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # Explicitly tell it where to start (Latest Tag) and end (Current Commit)
+          fromTag: ${{ steps.bump-semver.outputs.version_tag }}
+          toRef: ${{ github.sha }}
+
           configurationJson: |
             {
               "pr_template": "- #{{TITLE}} [[#{{NUMBER}}](#{{URL}})]",
@@ -118,12 +126,16 @@ jobs:
                 {
                   "pattern": "^\\[(.*?)\\]",
                   "target": "$1"
+                },
+                {
+                  "pattern": "^(\\w+)(?:\\(.*?\\))?:",
+                  "target": "$1"
                 }
               ],
               "categories": [
                 {
                   "title": "## 🚀 Features",
-                  "labels": ["feature", "Feature", "feat"]
+                  "labels": ["feature", "Feature", "feat", "Feat"]
                 },
                 {
                   "title": "## 🐛 Fixes",
