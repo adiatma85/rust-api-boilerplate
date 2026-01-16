@@ -44,10 +44,10 @@ RATCHET_URL := https://github.com/sethvargo/ratchet/releases/download/v$(RATCHET
 
 # --- Tools ---
 
-.PHONY: install-tools clean-tools ensure-bin-dir install-ratchet sort-install
+.PHONY: install-tools clean-tools ensure-bin-dir install-ratchet install-sort
 
 # Main target to run
-install-tools: ensure-bin-dir install-age install-sops install-ratchet sort-install
+install-tools: ensure-bin-dir install-age install-sops install-ratchet install-sort
 	@echo "✅ Installation complete! Executables are in $(BIN_DIR)"
 	@echo "👉 usage: $(BIN_DIR)/sops --version"
 
@@ -76,11 +76,11 @@ install-ratchet:
 	@chmod +x $(BIN_DIR)/ratchet
 	@echo "✨ Ratchet installed."
 
-sort-install:
+install-sort:
 	cargo install cargo-sort@2.0.2
 
 clean-tools:
-	@rm -rf $(BIN_DIR)/age $(BIN_DIR)/age-keygen $(BIN_DIR)/sops
+	@rm -rf $(BIN_DIR)
 	@echo "🧹 Cleaned up executables."
 
 
