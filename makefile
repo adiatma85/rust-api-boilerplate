@@ -80,7 +80,7 @@ sort-install:
 	cargo install cargo-sort@2.0.2
 
 clean-tools:
-	@rm -rf $(BIN_DIR)/age $(BIN_DIR)/age-keygen $(BIN_DIR)/sops
+	@rm -rf $(BIN_DIR)/age $(BIN_DIR)/age-keygen $(BIN_DIR)/sops $(BIN_DIR)/ratchet
 	@echo "🧹 Cleaned up executables."
 
 
