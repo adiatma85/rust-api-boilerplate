@@ -66,10 +66,8 @@ jobs:
           bump_each_commit: false
           tag_prefix: "v"
           search_commit_body: true
-          # Regex matches NOTHING, so version numbers never bump, only RC increments
           major_pattern: "(?!.*)"
           minor_pattern: "(?!.*)"
-          patch_pattern: "(?!.*)"
 
       - name: Save Version File
         run: echo "${{ steps.bump-semver.outputs.version }}" > version.txt
