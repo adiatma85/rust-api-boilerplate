@@ -109,14 +109,13 @@ jobs:
       # Debugging Step: Verify what the Regex sees
       - name: 🔍 Verify Label Extraction
         run: |
-          # 1. Get the commit message (or PR title)
+          # 1. Get the commit message
           MSG="${{ github.event.head_commit.message }}"
           echo "Testing Message: $MSG"
 
-          # 2. Run the EXACT regex you used in config
-          # Regex: ^([a-zA-Z0-9_]+)(?:[(].*?[)])?:
-          # This sed command mimics the extraction:
-          EXTRACTED=$(echo "$MSG" | sed -nE 's/^([a-zA-Z0-9_]+)(?:[(].*?[)])?:.*/\1/p')
+          # 2. Run a SED-compatible regex
+          # Logic: Capture the first word ^([a-zA-Z0-9_]+) and ignore everything else .*
+          EXTRACTED=$(echo "$MSG" | sed -nE 's/^([a-zA-Z0-9_]+).*/\1/p')
 
           echo "----------------------------------------"
           echo "✅ RAW INPUT:   $MSG"
@@ -126,8 +125,12 @@ jobs:
           # 3. Validation Logic
           if [[ "$EXTRACTED" == "chore" ]]; then
             echo "🎉 SUCCESS: It detected 'chore'!"
+          elif [[ "$EXTRACTED" == "fix" ]]; then
+            echo "🎉 SUCCESS: It detected 'fix'!"
+          elif [[ "$EXTRACTED" == "feat" ]]; then
+            echo "🎉 SUCCESS: It detected 'feat'!"
           else
-            echo "❌ WARNING: It extracted '$EXTRACTED' instead of 'chore'."
+            echo "⚠️  NOTE: It extracted '$EXTRACTED'. Ensure this matches one of your categories."
           fi
 
       # 7. Generate Tidy Changelog
