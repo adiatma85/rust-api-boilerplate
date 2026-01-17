@@ -115,8 +115,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # Explicitly tell it where to start (Latest Tag) and end (Current Commit)
-          fromTag: ${{ steps.bump-semver.outputs.version_tag }}
           toRef: ${{ github.sha }}
 
           configurationJson: |
