@@ -59,7 +59,7 @@ jobs:
 
       # 4. Versioning
       - name: Generate New Bumped Version
-        uses: paulhatch/semantic-version@a8f8f59fd7f0625188492e945240f12d7ad2dca3
+        uses: paulhatch/semantic-version@a8f8f59fd7f0625188492e945240f12d7ad2dca3 # ratchet:paulhatch/semantic-version@v5.4.0
         id: bump-semver
         with:
           version_format: "v${major}.${minor}.${patch}-rc.${increment}"
@@ -111,11 +111,11 @@ jobs:
       # 7. Generate Tidy Changelog
       - name: Build Changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@439f79b5b5428107c7688c1d2b0e8bacc9b8792c
+        uses: mikepenz/release-changelog-builder-action@439f79b5b5428107c7688c1d2b0e8bacc9b8792c # ratchet:mikepenz/release-changelog-builder-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          toRef: ${{ github.sha }}
+          toTag: ${{ github.sha }}
 
           configurationJson: |
             {
