@@ -31,7 +31,7 @@ jobs:
       # 1. Setup Rust
       # We use dtolnay's action because it's faster than rustup in CI
       - name: Setup Rust environment
-        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # ratchet:dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561 # ratchet:dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
 
