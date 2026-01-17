@@ -116,8 +116,6 @@ jobs:
                   "target": "$1"
                 },
                 {
-                  # 👇 NEW PATTERN: Zero backslashes.
-                  # Logic: Start -> Word -> Optional ( Scope ) -> Colon
                   "pattern": "^([a-zA-Z0-9_]+)(?:[(].*?[)])?:",
                   "target": "$1"
                 }
