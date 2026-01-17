@@ -107,31 +107,31 @@ jobs:
           echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
 
       # Debugging Step: Verify what the Regex sees
-      - name: 🔍 Verify Label Extraction
-        run: |
-          # 1. Get the commit message
-          MSG="${{ github.event.head_commit.message }}"
-          echo "Testing Message: $MSG"
+      # - name: 🔍 Verify Label Extraction
+      #   run: |
+      #     # 1. Get the commit message
+      #     MSG="${{ github.event.head_commit.message }}"
+      #     echo "Testing Message: $MSG"
 
-          # 2. Run a SED-compatible regex
-          # Logic: Capture the first word ^([a-zA-Z0-9_]+) and ignore everything else .*
-          EXTRACTED=$(echo "$MSG" | sed -nE 's/^([a-zA-Z0-9_]+).*/\1/p')
+      #     # 2. Run a SED-compatible regex
+      #     # Logic: Capture the first word ^([a-zA-Z0-9_]+) and ignore everything else .*
+      #     EXTRACTED=$(echo "$MSG" | sed -nE 's/^([a-zA-Z0-9_]+).*/\1/p')
 
-          echo "----------------------------------------"
-          echo "✅ RAW INPUT:   $MSG"
-          echo "✅ EXTRACTED:   $EXTRACTED"
-          echo "----------------------------------------"
+      #     echo "----------------------------------------"
+      #     echo "✅ RAW INPUT:   $MSG"
+      #     echo "✅ EXTRACTED:   $EXTRACTED"
+      #     echo "----------------------------------------"
 
-          # 3. Validation Logic
-          if [[ "$EXTRACTED" == "chore" ]]; then
-            echo "🎉 SUCCESS: It detected 'chore'!"
-          elif [[ "$EXTRACTED" == "fix" ]]; then
-            echo "🎉 SUCCESS: It detected 'fix'!"
-          elif [[ "$EXTRACTED" == "feat" ]]; then
-            echo "🎉 SUCCESS: It detected 'feat'!"
-          else
-            echo "⚠️  NOTE: It extracted '$EXTRACTED'. Ensure this matches one of your categories."
-          fi
+      #     # 3. Validation Logic
+      #     if [[ "$EXTRACTED" == "chore" ]]; then
+      #       echo "🎉 SUCCESS: It detected 'chore'!"
+      #     elif [[ "$EXTRACTED" == "fix" ]]; then
+      #       echo "🎉 SUCCESS: It detected 'fix'!"
+      #     elif [[ "$EXTRACTED" == "feat" ]]; then
+      #       echo "🎉 SUCCESS: It detected 'feat'!"
+      #     else
+      #       echo "⚠️  NOTE: It extracted '$EXTRACTED'. Ensure this matches one of your categories."
+      #     fi
 
       # 7. Generate Tidy Changelog
       - name: Build Changelog
