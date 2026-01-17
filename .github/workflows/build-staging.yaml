@@ -147,11 +147,8 @@ jobs:
               "pr_template": "- #{{TITLE}} [[#{{NUMBER}}](#{{URL}})]",
               "label_extractor": [
                 {
-                  "pattern": "^\\[(.*?)\\]",
-                  "target": "$1"
-                },
-                {
-                  "pattern": "^([a-zA-Z0-9_]+)",
+                  "pattern": "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
+                  "on_property": "title",
                   "target": "$1"
                 }
               ],
