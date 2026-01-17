@@ -65,8 +65,8 @@ jobs:
           version_format: "v${major}.${minor}.${patch}-rc.${increment}"
           tag_prefix: "v"
           search_commit_body: true
-          major_pattern: "(BREAKING CHANGE|!:)"
-          minor_pattern: "(feat|Feature)"
+          major_pattern: "/!:|BREAKING CHANGE/"
+          minor_pattern: "/feat|feature/"
 
       - name: Save Version File
         run: echo "${{ steps.bump-semver.outputs.version }}" > version.txt
