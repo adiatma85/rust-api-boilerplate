@@ -63,7 +63,7 @@ jobs:
         id: bump-semver
         with:
           version_format: "v${major}.${minor}.${patch}-rc.${increment}"
-          bump_each_commit: true
+          bump_each_commit: false
           tag_prefix: "v"
           search_commit_body: true
           # Regex matches NOTHING, so version numbers never bump, only RC increments
