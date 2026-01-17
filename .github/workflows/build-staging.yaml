@@ -106,6 +106,30 @@ jobs:
 
           echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
 
+      # Debugging Step: Verify what the Regex sees
+      - name: 🔍 Verify Label Extraction
+        run: |
+          # 1. Get the commit message (or PR title)
+          MSG="${{ github.event.head_commit.message }}"
+          echo "Testing Message: $MSG"
+
+          # 2. Run the EXACT regex you used in config
+          # Regex: ^([a-zA-Z0-9_]+)(?:[(].*?[)])?:
+          # This sed command mimics the extraction:
+          EXTRACTED=$(echo "$MSG" | sed -nE 's/^([a-zA-Z0-9_]+)(?:[(].*?[)])?:.*/\1/p')
+
+          echo "----------------------------------------"
+          echo "✅ RAW INPUT:   $MSG"
+          echo "✅ EXTRACTED:   $EXTRACTED"
+          echo "----------------------------------------"
+
+          # 3. Validation Logic
+          if [[ "$EXTRACTED" == "chore" ]]; then
+            echo "🎉 SUCCESS: It detected 'chore'!"
+          else
+            echo "❌ WARNING: It extracted '$EXTRACTED' instead of 'chore'."
+          fi
+
       # 7. Generate Tidy Changelog
       - name: Build Changelog
         id: build_changelog
