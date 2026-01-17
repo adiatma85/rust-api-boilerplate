@@ -105,12 +105,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          toTag: ${{ github.sha }}
+
           configurationJson: |
             {
               "pr_template": "- #{{TITLE}} [[#{{NUMBER}}](#{{URL}})]",
               "label_extractor": [
                 {
                   "pattern": "^\\[(.*?)\\]",
+                  "target": "$1"
+                },
+                {
+                  # 👇 NEW PATTERN: Zero backslashes.
+                  # Logic: Start -> Word -> Optional ( Scope ) -> Colon
+                  "pattern": "^([a-zA-Z0-9_]+)(?:[(].*?[)])?:",
                   "target": "$1"
                 }
               ],
