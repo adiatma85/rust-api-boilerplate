@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use sea_orm::{ActiveValue::Set, DatabaseConnection};
 
@@ -24,13 +26,13 @@ pub trait UserDomainTrait: Send + Sync {
 
 // 1. The Struct holding the DB Connection
 pub struct UserDomainImpl {
-    db: DatabaseConnection,
+    db: Arc<DatabaseConnection>,
     // In below, we can add many of the things in here such as redis cache, logs, or anything else
     // But it will big chance that this actually need a redis instead
 }
 
 pub struct InitParam {
-    pub db: DatabaseConnection,
+    pub db: Arc<DatabaseConnection>,
 }
 
 pub fn init(param: InitParam) -> impl UserDomainTrait {

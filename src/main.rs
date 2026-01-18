@@ -6,9 +6,9 @@ mod helper;
 mod state;
 mod usecase;
 
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::Database;
 use tokio::signal;
 
 use crate::{config::app_settings::AppSettings, handler::http::rest};
@@ -33,10 +33,14 @@ async fn main() {
         .await
         .unwrap();
 
+    let db_conn = Arc::new(db);
+
     println!("✅ Database connected successfully");
 
     // Initialize the domain layer
-    let domain = domain::init(domain::InitParam { db: db.clone() });
+    let domain = domain::init(domain::InitParam {
+        db: db_conn.clone(),
+    });
 
     // Initialize the usecase layer
     let usecase = usecase::init(usecase::InitParam {
@@ -61,8 +65,6 @@ async fn main() {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
-
-    clean_up(CleanUpResources { db }).await;
 }
 
 // This is the function to make the application shutdown gracefully
@@ -90,28 +92,4 @@ async fn shutdown_signal() {
     }
 
     println!("\n🛑 Signal received, stopping web server...");
-}
-
-// Clean up resources that we run in here
-
-struct CleanUpResources {
-    db: DatabaseConnection,
-}
-
-async fn clean_up(params: CleanUpResources) {
-    // --- CLEANUP PHASE ---
-    // The code reaches here ONLY after the shutdown signal is received
-    // and active HTTP requests have finished.
-
-    println!("Creating graceful shutdown...");
-
-    // Explicitly close the database connection
-    // This ensures the connection pool is drained and closed properly
-    if let Err(err) = params.db.close().await {
-        eprintln!("Error closing database: {}", err);
-    } else {
-        println!("✅ Database connection closed successfully");
-    }
-
-    println!("👋 Bye!");
 }

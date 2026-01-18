@@ -219,3 +219,204 @@ where
 
 // --- We can write other functions in here also, for example generic function to fetch a single entity instead ---
 // --- Or we can also create a generic function to update an entity ---
+
+// ----------- UNIT TESTS -----------
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use sea_orm::{Condition, DatabaseBackend, MockDatabase, entity::prelude::*};
+
+    use super::*; // Import your fetch_list and traits // <-- ADD THIS LINE
+
+    // --- 1. Define a Dummy Entity (Standard SeaORM Boilerplate) ---
+    #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+    #[sea_orm(table_name = "bakery")]
+    pub struct Model {
+        #[sea_orm(primary_key)]
+        pub id: i32,
+        pub name: String,
+        pub profit: f64,
+    }
+
+    #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+    pub enum Relation {}
+    impl ActiveModelBehavior for ActiveModel {}
+
+    // --- 2. Define a Dummy Filter Struct ---
+    pub struct TestFilter {
+        pub page: u64,
+        pub limit: u64,
+        pub disable_limit: bool,
+        pub name_contains: Option<String>,
+    }
+
+    // Implement your 'Paginatable' trait
+    impl Paginatable for TestFilter {
+        fn get_page(&self) -> u64 {
+            self.page
+        }
+        fn get_limit(&self) -> u64 {
+            self.limit
+        }
+        fn is_limit_disabled(&self) -> bool {
+            self.disable_limit
+        }
+    }
+
+    // Implement your 'Filterable' trait
+    impl Filterable for TestFilter {
+        fn to_condition(&self) -> Condition {
+            let mut condition = Condition::all();
+            if let Some(name) = &self.name_contains {
+                condition = condition.add(Column::Name.contains(name));
+            }
+            condition
+        }
+    }
+
+    #[tokio::test]
+    async fn test_fetch_list_paginated_postgres() {
+        // 1. Setup the Filter
+        let filter = TestFilter {
+            page: 0,
+            limit: 10,
+            disable_limit: false,
+            name_contains: Some("Happy".to_string()),
+        };
+
+        // 2. Setup Mock Results manually (No maplit needed)
+
+        // Create the Count Map manually
+        let mut count_map = BTreeMap::new();
+        count_map.insert("num_items".to_string(), Into::<sea_orm::Value>::into(50i64));
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![
+                // Query 1 Result: COUNT(*)
+                // We pass the map we created above
+                vec![count_map],
+            ])
+            .append_query_results(vec![
+                // Query 2 Result: The actual data
+                vec![
+                    Model {
+                        id: 1,
+                        name: "Happy Bakery".to_owned(),
+                        profit: 100.0,
+                    },
+                    Model {
+                        id: 2,
+                        name: "Happy Cookies".to_owned(),
+                        profit: 200.0,
+                    },
+                ],
+            ])
+            .into_connection();
+
+        // 3. Execute
+        let result = fetch_list::<Entity, Model, TestFilter>(&db, filter).await;
+
+        // 4. Assertions
+        assert!(result.is_ok());
+        let (data, pagination) = result.unwrap();
+
+        assert_eq!(data.len(), 2);
+        assert_eq!(pagination.total_elements, 50);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_list_unlimited_postgres() {
+        // 1. Setup Filter (Limit Disabled)
+        let filter = TestFilter {
+            page: 0,
+            limit: 10, // Should be ignored
+            disable_limit: true,
+            name_contains: None,
+        };
+
+        // 2. Setup Mock Database
+        // We expect only 1 query (SELECT ALL)
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![vec![
+                Model {
+                    id: 1,
+                    name: "Bakery A".to_owned(),
+                    profit: 10.0,
+                },
+                Model {
+                    id: 2,
+                    name: "Bakery B".to_owned(),
+                    profit: 20.0,
+                },
+                Model {
+                    id: 3,
+                    name: "Bakery C".to_owned(),
+                    profit: 30.0,
+                },
+            ]])
+            .into_connection();
+
+        // 3. Execute
+        let result = fetch_list::<Entity, Model, TestFilter>(&db, filter).await;
+
+        // 4. Assertions
+        let (data, pagination) = result.unwrap();
+
+        assert_eq!(data.len(), 3);
+
+        // Check hardcoded values for unlimited branch
+        assert_eq!(pagination.total_pages, 1);
+        assert_eq!(pagination.current_page, 0);
+        assert_eq!(pagination.total_elements, 3);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_list_generates_correct_sql_postgres() {
+        use std::collections::BTreeMap; // Import BTreeMap
+
+        // 1. Setup Filter
+        let filter = TestFilter {
+            page: 1,
+            limit: 5,
+            disable_limit: false,
+            name_contains: Some("Test".to_string()),
+        };
+
+        // 2. Setup Mock with Manual BTreeMap
+        let mut count_row = BTreeMap::new();
+        count_row.insert("num_items".to_string(), Into::<sea_orm::Value>::into(1i64));
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![vec![
+                count_row, // Pass the manually created map here
+            ]]) // Count Query Result
+            .append_query_results(vec![vec![Model {
+                id: 1,
+                name: "Test".to_string(),
+                profit: 0.0,
+            }]]) // Data Query Result
+            .into_connection();
+
+        // 3. Execute
+        let _ = fetch_list::<Entity, Model, TestFilter>(&db, filter).await;
+
+        // 4. Verify SQL
+        let log = db.into_transaction_log();
+
+        // FIXED: Use format!("{:?}") because Transaction doesn't implement Display
+        // This converts the log object (SQL + Params) into a debug string.
+        let count_log_str = format!("{:?}", log[0]);
+
+        // Print it if you want to see what it looks like:
+        // println!("Count SQL: {}", count_log_str);
+
+        assert!(count_log_str.contains("SELECT COUNT(*)"));
+        // Note: SeaORM quotes might vary ("bakery"."name" vs "name"), so checking a partial substring is safer
+        assert!(count_log_str.contains("name"));
+
+        let fetch_log_str = format!("{:?}", log[1]);
+        assert!(fetch_log_str.contains("LIMIT $2 OFFSET $3"));
+    }
+}
