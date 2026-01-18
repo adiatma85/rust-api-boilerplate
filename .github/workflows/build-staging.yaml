@@ -105,6 +105,28 @@ jobs:
 
           echo "docker_image=$FULL_IMAGE" >> "$GITHUB_OUTPUT"
 
+      # 6.5. [NEW] Find the Last Stable Release (v0.2.0)
+      - name: Find Latest Stable Tag
+        id: stable_tag
+        run: |
+          # 1. Fetch tags (ensure we have the full list)
+          git fetch --tags --force
+
+          # 2. Find the latest tag that starts with 'v' and has NO hyphens (no -rc)
+          # --sort=-v:refname  : Sorts by version (highest first)
+          # grep -v "-"        : Removes any tag with a hyphen (rc, beta, alpha)
+          # head -n 1          : Takes the top one
+          LATEST_STABLE=$(git tag --sort=-v:refname | grep "^v[0-9]" | grep -v "-" | head -n 1)
+
+          # 3. Handle case where NO stable tags exist yet
+          if [ -z "$LATEST_STABLE" ]; then
+              echo "No stable tag found. Defaulting to empty (start of history)."
+              echo "tag=" >> $GITHUB_OUTPUT
+          else
+              echo "Found stable tag: $LATEST_STABLE"
+              echo "tag=$LATEST_STABLE" >> $GITHUB_OUTPUT
+          fi
+
       # 7. Generate Tidy Changelog
       - name: Build Changelog
         id: build_changelog
@@ -112,8 +134,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          fromTag: ${{ steps.stable_tag.outputs.tag }}
           toTag: ${{ github.sha }}
-          ignorePreReleases: true
 
           configurationJson: |
             {
