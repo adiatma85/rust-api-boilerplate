@@ -1,4 +1,4 @@
-name: Linter Audit
+name: Test Audit
 on:
   pull_request:
     branches: ["main"]
