@@ -185,6 +185,10 @@ check: ratchet-check
 clean: clean-tools
 	cargo clean
 
+.PHONY:
+test:
+	cargo test
+
 .PHONY: run
 run:
 	cargo run
