@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use sea_orm::DatabaseConnection;
 
@@ -38,11 +40,11 @@ pub trait CardDomainTrait: Send + Sync {
 }
 
 pub struct CardDomainImpl {
-    db: DatabaseConnection,
+    db: Arc<DatabaseConnection>,
 }
 
 pub struct InitParam {
-    pub db: DatabaseConnection,
+    pub db: Arc<DatabaseConnection>,
 }
 
 pub fn init(param: InitParam) -> impl CardDomainTrait {

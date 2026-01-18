@@ -16,7 +16,7 @@ pub struct Domain {
 }
 
 pub struct InitParam {
-    pub db: DatabaseConnection,
+    pub db: Arc<DatabaseConnection>,
 }
 
 pub fn init(param: InitParam) -> Domain {

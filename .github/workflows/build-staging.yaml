@@ -112,6 +112,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          toTag: ${{ github.sha }}
           ignorePreReleases: true
 
           configurationJson: |
@@ -138,19 +139,19 @@ jobs:
                   "labels": ["chore", "Chore"]
                 },
                 {
-                  "title": "## 🧹 CI/CD",
+                  "title": "## ⚙️ CI/CD",
                   "labels": ["ci/cd", "CI/CD"]
                 },
                 {
-                  "title": "## 🧹 Docs",
+                  "title": "## 📝 Docs",
                   "labels": ["docs", "Docs"]
                 },
                 {
-                  "title": "## 🧹 Refactor",
+                  "title": "## ♻️ Refactor",
                   "labels": ["refactor", "Refactor"]
                 },
                 {
-                  "title": "## 🧹 Test",
+                  "title": "## 🧪 Test",
                   "labels": ["test", "Test"]
                 },
                 {
