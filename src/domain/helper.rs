@@ -320,7 +320,64 @@ mod tests {
 
         // 4. Assertions
         assert!(result.is_ok());
-        let (data, pagination) = result.unwrap();
+        let (data, pagination) = result.expect("Fetch list failed");
+
+        assert_eq!(data.len(), 2);
+        assert_eq!(pagination.total_elements, 50);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_list_paginated_mysql() {
+        use std::collections::BTreeMap;
+
+        use sea_orm::Value;
+
+        // 1. Setup Filter
+        let filter = TestFilter {
+            page: 0,
+            limit: 10,
+            disable_limit: false,
+            name_contains: Some("Happy".to_string()),
+        };
+
+        // 2. Setup Count Map (The "Shotgun" Fix)
+        let mut count_map = BTreeMap::new();
+
+        // FIX A: Use Value::Int (i32).
+        // This is the most compatible type for mocks; it casts to u64 easily
+        // without the strict validation that BigInt/BigUnsigned triggers.
+        let count_val = Value::Int(Some(50));
+
+        // FIX B: Insert BOTH plain and quoted keys.
+        // This ensures that whether SeaORM looks for "num_items" or "`num_items`",
+        // it will find the value.
+        count_map.insert("num_items".to_string(), count_val.clone());
+        count_map.insert("`num_items`".to_string(), count_val);
+
+        // 3. Setup Data
+        let models = vec![
+            Model {
+                id: 1,
+                name: "Happy Bakery".to_owned(),
+                profit: 100.0,
+            },
+            Model {
+                id: 2,
+                name: "Happy Cookies".to_owned(),
+                profit: 200.0,
+            },
+        ];
+
+        let db = MockDatabase::new(DatabaseBackend::MySql)
+            .append_query_results(vec![vec![count_map]]) // Queue 1: Count
+            .append_query_results(vec![models]) // Queue 2: Data
+            .into_connection();
+
+        // 4. Execute
+        let result = fetch_list::<Entity, Model, TestFilter>(&db, filter).await;
+
+        // 5. Assertions
+        let (data, pagination) = result.expect("Fetch list failed");
 
         assert_eq!(data.len(), 2);
         assert_eq!(pagination.total_elements, 50);
@@ -362,7 +419,53 @@ mod tests {
         let result = fetch_list::<Entity, Model, TestFilter>(&db, filter).await;
 
         // 4. Assertions
-        let (data, pagination) = result.unwrap();
+        let (data, pagination) = result.expect("Fetch list failed");
+
+        assert_eq!(data.len(), 3);
+
+        // Check hardcoded values for unlimited branch
+        assert_eq!(pagination.total_pages, 1);
+        assert_eq!(pagination.current_page, 0);
+        assert_eq!(pagination.total_elements, 3);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_list_unlimited_mysql() {
+        // 1. Setup Filter (Limit Disabled)
+        let filter = TestFilter {
+            page: 0,
+            limit: 10, // Should be ignored
+            disable_limit: true,
+            name_contains: None,
+        };
+
+        // 2. Setup Mock Database
+        // We expect only 1 query (SELECT ALL)
+        let db = MockDatabase::new(DatabaseBackend::MySql)
+            .append_query_results(vec![vec![
+                Model {
+                    id: 1,
+                    name: "Bakery A".to_owned(),
+                    profit: 10.0,
+                },
+                Model {
+                    id: 2,
+                    name: "Bakery B".to_owned(),
+                    profit: 20.0,
+                },
+                Model {
+                    id: 3,
+                    name: "Bakery C".to_owned(),
+                    profit: 30.0,
+                },
+            ]])
+            .into_connection();
+
+        // 3. Execute
+        let result = fetch_list::<Entity, Model, TestFilter>(&db, filter).await;
+
+        // 4. Assertions
+        let (data, pagination) = result.expect("Fetch list failed");
 
         assert_eq!(data.len(), 3);
 
