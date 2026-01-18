@@ -129,6 +129,22 @@ jobs:
                   "labels": ["chore", "Chore"]
                 },
                 {
+                  "title": "## ⚙️ CI/CD",
+                  "labels": ["ci/cd", "CI/CD"]
+                },
+                {
+                  "title": "## 📝 Docs",
+                  "labels": ["docs", "Docs"]
+                },
+                {
+                  "title": "## ♻️ Refactor",
+                  "labels": ["refactor", "Refactor"]
+                },
+                {
+                  "title": "## 🧪 Test",
+                  "labels": ["test", "Test"]
+                },
+                {
                   "title": "## 📦 Other Changes",
                   "labels": []
                 }
