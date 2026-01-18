@@ -328,10 +328,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_fetch_list_paginated_mysql() {
-        use std::collections::BTreeMap;
-
-        use sea_orm::Value;
-
         // 1. Setup Filter
         let filter = TestFilter {
             page: 0,
