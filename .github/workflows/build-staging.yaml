@@ -81,7 +81,7 @@ jobs:
 
       # 4. Versioning
       - name: Generate New Bumped Version
-        uses: paulhatch/semantic-version@a8f8f59fd7f0625188492e945240f12d7ad2dca3 # ratchet:paulhatch/semantic-version@v5.4.0
+        uses: paulhatch/semantic-version@f29500c9d60a99ed5168e39ee367e0976884c46e # v6.0.1
         id: bump-semver
         with:
           version_format: "v${major}.${minor}.${patch}-rc.${increment}"
