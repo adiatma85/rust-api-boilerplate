@@ -24,14 +24,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # ratchet:actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 
       # 1. Setup Rust
       # We use dtolnay's action because it's faster than rustup in CI
       - name: Setup Rust environment
-        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # ratchet:dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561 # ratchet:dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
 
@@ -104,7 +104,7 @@ jobs:
 
       # 6. Docker Build & Push
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # ratchet:docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -130,7 +130,7 @@ jobs:
       # 7. Generate Tidy Changelog
       - name: Build Changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@439f79b5b5428107c7688c1d2b0e8bacc9b8792c # ratchet:mikepenz/release-changelog-builder-action@v6
+        uses: mikepenz/release-changelog-builder-action@6faf020194b7c8853f9e55c4fd92e40b02122a04 # v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
