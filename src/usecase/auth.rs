@@ -11,9 +11,7 @@ use jsonwebtoken::{EncodingKey, Header, encode};
 use crate::{
     domain::user::UserDomainTrait,
     entity::{self, auth::Claims, response::AppCode},
-}; // Import your User Entity
-
-// 3. The Usecase Struct
+};
 
 #[async_trait]
 pub trait AuthUsecaseTrait: Send + Sync {
@@ -80,5 +78,124 @@ impl AuthUsecaseTrait for AuthUsecase {
         .map_err(|_| AppCode::Unauthorized)?;
 
         Ok(token)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use argon2::{
+        Argon2,
+        password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
+    };
+    use sea_orm::prelude::DateTimeUtc;
+
+    use super::*;
+    use crate::{
+        domain::user::MockUserDomainTrait,
+        entity::{auth::LoginParams, user},
+    };
+
+    fn create_hashed_password(password: &str) -> String {
+        let salt = SaltString::generate(&mut OsRng);
+        Argon2::default()
+            .hash_password(password.as_bytes(), &salt)
+            .unwrap()
+            .to_string()
+    }
+
+    fn create_test_user(password: &str) -> user::Model {
+        user::Model {
+            id: 1,
+            email: "test@example.com".to_string(),
+            name: "Test User".to_string(),
+            hashed_password: create_hashed_password(password),
+            status: 1,
+            created_at: DateTimeUtc::from(Utc::now()),
+            updated_at: DateTimeUtc::from(Utc::now()),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_login_success() {
+        let password = "password123";
+        let user = create_test_user(password);
+
+        let mut mock_user_domain = MockUserDomainTrait::new();
+        mock_user_domain
+            .expect_get_one()
+            .times(1)
+            .returning(move |_| Ok(user.clone()));
+
+        let auth_usecase = init(InitParam {
+            jwt_secret: "secret".to_string(),
+            user_domain: Arc::new(mock_user_domain),
+        });
+
+        let result = auth_usecase
+            .login(LoginParams {
+                email: "test@example.com".to_string(),
+                password: password.to_string(),
+            })
+            .await;
+
+        assert!(result.is_ok());
+        let token = result.unwrap();
+        assert!(!token.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_login_user_not_found() {
+        let mut mock_user_domain = MockUserDomainTrait::new();
+        mock_user_domain
+            .expect_get_one()
+            .times(1)
+            .returning(|_| Err(crate::entity::error::AppError::NotFound));
+
+        let auth_usecase = init(InitParam {
+            jwt_secret: "secret".to_string(),
+            user_domain: Arc::new(mock_user_domain),
+        });
+
+        let result = auth_usecase
+            .login(LoginParams {
+                email: "notfound@example.com".to_string(),
+                password: "password".to_string(),
+            })
+            .await;
+
+        match result {
+            Err(AppCode::NotFound) => assert!(true),
+            _ => panic!("Expected AppCode::NotFound, got {:?}", result),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_login_wrong_password() {
+        let password = "password123";
+        let user = create_test_user(password);
+
+        // Mock returning the user, but we'll send a wrong password
+        let mut mock_user_domain = MockUserDomainTrait::new();
+        mock_user_domain
+            .expect_get_one()
+            .times(1)
+            .returning(move |_| Ok(user.clone()));
+
+        let auth_usecase = init(InitParam {
+            jwt_secret: "secret".to_string(),
+            user_domain: Arc::new(mock_user_domain),
+        });
+
+        let result = auth_usecase
+            .login(LoginParams {
+                email: "test@example.com".to_string(),
+                password: "wrongpassword".to_string(),
+            })
+            .await;
+
+        match result {
+            Err(AppCode::Unauthorized) => assert!(true),
+            _ => panic!("Expected AppCode::Unauthorized, got {:?}", result),
+        }
     }
 }
