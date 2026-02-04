@@ -36,7 +36,7 @@ pub struct Metadata {
 }
 
 // 4. Pagination Component (Optional)
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Pagination {
     pub current_page: u64,
     pub current_elements: u64,

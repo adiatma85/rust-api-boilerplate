@@ -12,6 +12,7 @@ use crate::{
     },
 };
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait]
 pub trait CardDomainTrait: Send + Sync {
     async fn create(&self, params: CreateCardDomParam) -> Result<card::Model, AppError>;

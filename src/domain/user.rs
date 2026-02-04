@@ -14,6 +14,7 @@ use crate::{
 
 // 1. Defining the interface or trait for the Domain
 // "Send + Sync" is required so this trait can be shared across threads (Axum requirement)
+#[cfg_attr(test, mockall::automock)]
 #[async_trait]
 pub trait UserDomainTrait: Send + Sync {
     async fn create(&self, params: CreateUserDomParam) -> Result<user::Model, AppError>;

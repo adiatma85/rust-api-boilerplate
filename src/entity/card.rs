@@ -46,12 +46,13 @@ impl ActiveModelBehavior for ActiveModel {}
 
 // --- Structs that used in Domain ---
 
+#[derive(Debug, PartialEq)]
 pub struct CreateCardDomParam {
     pub title: String,
     pub description: Option<String>,
 }
 
-#[derive(Default, Debug, Deserialize, IntoParams)]
+#[derive(Default, Debug, Deserialize, IntoParams, PartialEq)]
 #[into_params(parameter_in = Query)]
 pub struct CardDomParam {
     pub id: Option<i32>,
@@ -66,7 +67,7 @@ pub struct CardDomParam {
     pub pagination: PaginationParams,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 #[allow(dead_code)]
 pub struct CardDomUpdateParam {
     pub title: Option<String>,
