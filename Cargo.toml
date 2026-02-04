@@ -9,7 +9,7 @@ async-trait = "=0.1.89"
 axum = "0.8.8"
 chrono = { version = "0.4.43", features = ["serde"] }
 config = "0.15.19"
-jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 rand_core = { version = "0.9.5", features = ["std"] }
 sea-orm = { version = "1.1.19", features = ["sqlx-mysql", "runtime-tokio-rustls", "macros", "mock"] }
 serde = { version = "1.0.228", features = ["derive"] }
