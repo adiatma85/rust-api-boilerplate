@@ -83,6 +83,18 @@ clean-tools:
 	@rm -rf $(BIN_DIR)
 	@echo "🧹 Cleaned up executables."
 
+generate-age-key:
+	@mkdir -p .secrets
+	@if [ -f .secrets/keys.txt ]; then \
+		echo "⚠️  Age key already exists at .secrets/keys.txt"; \
+		echo "   Delete it first if you want to generate a new one."; \
+	else \
+		$(BIN_DIR)/age-keygen -o .secrets/keys.txt; \
+		chmod 600 .secrets/keys.txt; \
+		echo "✅ Age key generated and saved to .secrets/keys.txt"; \
+		echo "🔑 Public key:"; \
+		grep "public key:" .secrets/keys.txt; \
+	fi
 
 # --- Initialization commands ---
 
