@@ -106,7 +106,7 @@ pub async fn get_user_list_handler(
     };
 
     // Call UserUsecase
-    match state.usecase.user.get_list_user(params).await {
+    match state.usecase.user.get_list(params).await {
         Ok((users, pagination)) => {
             let resp = users;
             ctx.success(AppCode::Success, resp, Some(pagination))

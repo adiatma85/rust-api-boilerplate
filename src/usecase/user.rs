@@ -14,7 +14,7 @@ use crate::{
 #[async_trait]
 pub trait UserUsecaseTrait: Send + Sync {
     async fn create_user(&self, params: CreateUserUseParam) -> Result<user::Model, AppCode>;
-    async fn get_list_user(
+    async fn get_list(
         &self,
         params: UserDomParam,
     ) -> Result<(Vec<UserUseResponse>, Pagination), AppCode>;
@@ -53,7 +53,7 @@ impl UserUsecaseTrait for UserUsecase {
             .map_err(AppCode::from)
     }
 
-    async fn get_list_user(
+    async fn get_list(
         &self,
         params: UserDomParam,
     ) -> Result<(Vec<UserUseResponse>, Pagination), AppCode> {
@@ -148,7 +148,7 @@ mod tests {
             user_domain: Arc::new(mock_user_domain),
         });
 
-        let result = user_usecase.get_list_user(UserDomParam::default()).await;
+        let result = user_usecase.get_list(UserDomParam::default()).await;
 
         assert!(result.is_ok());
         let (users, _) = result.unwrap();
