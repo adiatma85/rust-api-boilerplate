@@ -102,16 +102,13 @@ pub async fn get_user_list_handler(
     Extension(ctx): Extension<RequestContext>,
 ) -> impl IntoResponse {
     let params = UserDomParam {
-        id: Some(2),
-        email_eq: None,
-        ..Default::default() // for now using default because it will be not used in the future yet
+        ..Default::default()
     };
 
     // Call UserUsecase
     match state.usecase.user.get_list_user(params).await {
         Ok((users, pagination)) => {
             let resp = users;
-            println!("The users are: {:?}", &resp);
             ctx.success(AppCode::Success, resp, Some(pagination))
         }
         Err(e) => ctx.error(AppCode::InternalServerError(e.to_string()), e.to_string()),
