@@ -904,27 +904,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gemini-assisted-axum"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "async-trait",
- "axum",
- "chrono",
- "config",
- "jsonwebtoken",
- "mockall",
- "rand_core 0.9.5",
- "sea-orm",
- "serde",
- "thiserror",
- "tokio",
- "utoipa",
- "utoipa-swagger-ui",
- "uuid",
-]
-
-[[package]]
 name = "generic-array"
 version = "0.14.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2113,6 +2092,27 @@ dependencies = [
  "spki",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "rust-api-boilerplate"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "async-trait",
+ "axum",
+ "chrono",
+ "config",
+ "jsonwebtoken",
+ "mockall",
+ "rand_core 0.9.5",
+ "sea-orm",
+ "serde",
+ "thiserror",
+ "tokio",
+ "utoipa",
+ "utoipa-swagger-ui",
+ "uuid",
 ]
 
 [[package]]

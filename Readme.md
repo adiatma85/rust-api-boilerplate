@@ -1,4 +1,4 @@
-# Gemini Assisted Axum API
+# Rust API Boilerplate
 
 This repository contains a REST API service built with **Rust**, **Axum**, and **SeaORM**. It follows a Clean Architecture pattern and features interactive API documentation via **Swagger UI** (Utoipa).
 
