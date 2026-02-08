@@ -27,6 +27,9 @@ async fn main() {
         }
     };
 
+    // Print the information about the application
+    print_app_info(&app_settings);
+
     // 2. Connect to Database (SeaORM)
     // SeaORM automatically handles connection pooling (like sql.DB in Go)
     let db = Database::connect(app_settings.database_url())
@@ -65,6 +68,15 @@ async fn main() {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+}
+
+fn print_app_info(app_settings: &AppSettings) {
+    println!("Application Name: {}", app_settings.app_metadata.name);
+    println!("Application Version: {}", app_settings.app_metadata.version);
+    println!(
+        "Application Description: {}",
+        app_settings.app_metadata.description
+    );
 }
 
 // This is the function to make the application shutdown gracefully

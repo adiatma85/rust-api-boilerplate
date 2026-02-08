@@ -18,7 +18,11 @@ pub trait CardUsecaseTrait: Send + Sync {
     async fn get_list(&self, param: CardDomParam) -> Result<Vec<card::Model>, AppCode>;
 
     // This need to be changed in the future
-    async fn update_one(&self, update_param: UpdateCardUseParam) -> Result<card::Model, AppCode>;
+    async fn update_one(
+        &self,
+        update_param: UpdateCardUseParam,
+        select_param: CardDomParam,
+    ) -> Result<card::Model, AppCode>;
     async fn delete_one(&self, param: CardDomParam) -> Result<card::Model, AppCode>;
 }
 
@@ -42,6 +46,7 @@ impl CardUsecaseTrait for CardUsecase {
         let create_dom_param = card::CreateCardDomParam {
             title: create_param.title,
             description: create_param.description,
+            user_id: create_param.user_id,
         };
 
         let result = self
@@ -71,12 +76,11 @@ impl CardUsecaseTrait for CardUsecase {
         Ok(result)
     }
 
-    async fn update_one(&self, update_param: UpdateCardUseParam) -> Result<card::Model, AppCode> {
-        let dom_param = card::CardDomParam {
-            id: Some(update_param.id),
-            ..Default::default()
-        };
-
+    async fn update_one(
+        &self,
+        update_param: UpdateCardUseParam,
+        select_param: CardDomParam,
+    ) -> Result<card::Model, AppCode> {
         let update_dom_param = card::CardDomUpdateParam {
             card_status: Some(update_param.status),
             ..Default::default()
@@ -84,7 +88,7 @@ impl CardUsecaseTrait for CardUsecase {
 
         let result = self
             .card_domain
-            .update_one(dom_param, update_dom_param)
+            .update_one(select_param, update_dom_param)
             .await
             .map_err(AppCode::from)?;
 
@@ -137,6 +141,7 @@ mod tests {
         let expected_param = card::CreateCardDomParam {
             title: "Test Card".to_string(),
             description: Some("Description".to_string()),
+            user_id: 1,
         };
 
         mock_card_domain
@@ -253,10 +258,16 @@ mod tests {
         });
 
         let result = card_usecase
-            .update_one(UpdateCardUseParam {
-                id: 1,
-                status: "done".to_string(),
-            })
+            .update_one(
+                UpdateCardUseParam {
+                    status: "done".to_string(),
+                    ..Default::default()
+                },
+                CardDomParam {
+                    id: Some(1),
+                    ..Default::default()
+                },
+            )
             .await;
 
         assert!(result.is_ok());
