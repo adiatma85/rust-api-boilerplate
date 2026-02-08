@@ -6,7 +6,6 @@ use crate::config::{
 };
 
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)] // for now it will be like this
 pub struct AppMetadata {
     pub name: String,
     pub version: String,

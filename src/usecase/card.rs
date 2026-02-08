@@ -42,6 +42,7 @@ impl CardUsecaseTrait for CardUsecase {
         let create_dom_param = card::CreateCardDomParam {
             title: create_param.title,
             description: create_param.description,
+            user_id: create_param.user_id,
         };
 
         let result = self
@@ -137,6 +138,7 @@ mod tests {
         let expected_param = card::CreateCardDomParam {
             title: "Test Card".to_string(),
             description: Some("Description".to_string()),
+            user_id: 1,
         };
 
         mock_card_domain
