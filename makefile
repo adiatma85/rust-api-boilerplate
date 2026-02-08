@@ -12,7 +12,7 @@ ifndef SOPS_AGE_KEY
 endif
 
 # APP Configuration
-APP_NAME := gemini-assisted-axum
+APP_NAME := rust-api-boilerplate
 
 # Directory to place executables
 BIN_DIR := ./bin
