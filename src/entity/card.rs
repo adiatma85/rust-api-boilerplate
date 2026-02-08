@@ -50,6 +50,7 @@ impl ActiveModelBehavior for ActiveModel {}
 pub struct CreateCardDomParam {
     pub title: String,
     pub description: Option<String>,
+    pub user_id: i32,
 }
 
 #[derive(Default, Debug, Deserialize, IntoParams, PartialEq)]
@@ -68,7 +69,6 @@ pub struct CardDomParam {
 }
 
 #[derive(Default, Debug, PartialEq)]
-#[allow(dead_code)]
 pub struct CardDomUpdateParam {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -77,7 +77,6 @@ pub struct CardDomUpdateParam {
 
 // --- Structs that used in Usecase ---
 #[derive(Default, Debug)]
-#[allow(dead_code)]
 pub struct CreateCardUseParam {
     pub title: String,
     pub description: Option<String>,
@@ -87,7 +86,6 @@ pub struct CreateCardUseParam {
 // This will be changed
 #[derive(Default, Debug)]
 pub struct UpdateCardUseParam {
-    pub id: i32,
     pub status: String,
 }
 

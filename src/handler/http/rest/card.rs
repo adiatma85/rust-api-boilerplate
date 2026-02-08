@@ -155,12 +155,21 @@ pub async fn update_card_status_handler(
     Extension(ctx): Extension<RequestContext>,
     Json(payload): Json<UpdateCardStatusRequest>,
 ) -> impl IntoResponse {
-    let params = UpdateCardUseParam {
-        id,
+    let update_param = UpdateCardUseParam {
         status: payload.status,
     };
 
-    match state.usecase.card.update_one(params).await {
+    let select_param = CardDomParam {
+        id: Some(id),
+        ..Default::default()
+    };
+
+    match state
+        .usecase
+        .card
+        .update_one(update_param, select_param)
+        .await
+    {
         Ok(_) => ctx.success(AppCode::Success, "Card status updated", None),
         Err(e) => ctx.error(e.clone(), e.to_string()),
     }
