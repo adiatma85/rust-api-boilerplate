@@ -86,7 +86,6 @@ pub struct CreateCardUseParam {
 // This will be changed
 #[derive(Default, Debug)]
 pub struct UpdateCardUseParam {
-    pub id: i32,
     pub status: String,
 }
 
