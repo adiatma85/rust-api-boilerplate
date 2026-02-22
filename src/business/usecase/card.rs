@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{
+use crate::business::{
     domain::card::CardDomainTrait,
     entity::{
         card::{self, CardDomParam, CreateCardUseParam, UpdateCardUseParam},
@@ -118,7 +118,7 @@ mod tests {
     use sea_orm::prelude::DateTimeUtc;
 
     use super::*;
-    use crate::{domain::card::MockCardDomainTrait, entity::response::Pagination};
+    use crate::business::{domain::card::MockCardDomainTrait, entity::response::Pagination};
 
     fn create_test_card() -> card::Model {
         card::Model {

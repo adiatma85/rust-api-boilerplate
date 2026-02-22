@@ -1,4 +1,4 @@
-use crate::usecase::Usecase;
+use crate::business::usecase::Usecase;
 
 #[derive(Clone)]
 pub struct AppState {

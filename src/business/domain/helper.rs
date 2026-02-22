@@ -3,7 +3,7 @@ use sea_orm::{
     PaginatorTrait, QueryFilter,
 };
 
-use crate::entity::{Filterable, Updatable, response::Pagination, util::Paginatable};
+use crate::business::entity::{Filterable, Updatable, response::Pagination, util::Paginatable};
 
 // --- General Helper function is below ---
 

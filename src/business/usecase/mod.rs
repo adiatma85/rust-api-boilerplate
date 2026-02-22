@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
+use crate::business::{
     domain::Domain,
     usecase::{auth::AuthUsecaseTrait, card::CardUsecaseTrait, user::UserUsecaseTrait},
 };

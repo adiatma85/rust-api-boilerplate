@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
 
-use crate::{
+use crate::business::{
     domain::user::UserDomainTrait,
     entity::{self, auth::Claims, response::AppCode},
 };
@@ -38,7 +38,7 @@ pub fn init(param: InitParam) -> impl AuthUsecaseTrait {
 #[async_trait]
 impl AuthUsecaseTrait for AuthUsecase {
     async fn login(&self, params: entity::auth::LoginParams) -> Result<String, AppCode> {
-        let user_dom_param = crate::entity::user::UserDomParam {
+        let user_dom_param = crate::business::entity::user::UserDomParam {
             email_eq: Some(params.email),
             ..Default::default()
         };
@@ -90,7 +90,7 @@ mod tests {
     use sea_orm::prelude::DateTimeUtc;
 
     use super::*;
-    use crate::{
+    use crate::business::{
         domain::user::MockUserDomainTrait,
         entity::{auth::LoginParams, user},
     };
@@ -149,7 +149,7 @@ mod tests {
         mock_user_domain
             .expect_get_one()
             .times(1)
-            .returning(|_| Err(crate::entity::error::AppError::NotFound));
+            .returning(|_| Err(crate::business::entity::error::AppError::NotFound));
 
         let auth_usecase = init(InitParam {
             jwt_secret: "secret".to_string(),

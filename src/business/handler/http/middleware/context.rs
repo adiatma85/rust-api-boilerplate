@@ -8,7 +8,7 @@ use axum::{
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::entity::response::{ApiResponse, AppCode, Pagination};
+use crate::business::entity::response::{ApiResponse, AppCode, Pagination};
 
 // Define a struct to hold our "Request Context"
 #[derive(Clone)]

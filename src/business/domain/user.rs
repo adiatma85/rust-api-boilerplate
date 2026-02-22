@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use sea_orm::{ActiveValue::Set, DatabaseConnection};
 
-use crate::{
+use crate::business::{
     domain::helper::{fetch_list, fetch_one},
     entity::{
         error::AppError,

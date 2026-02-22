@@ -1,17 +1,17 @@
+mod business;
 mod config;
-mod domain;
-mod entity;
-mod handler;
 mod helper;
 mod state;
-mod usecase;
 
 use std::{net::SocketAddr, sync::Arc};
 
 use sea_orm::Database;
 use tokio::signal;
 
-use crate::{config::app_settings::AppSettings, handler::http::rest};
+use crate::{
+    business::{domain, handler::http::rest},
+    config::app_settings::AppSettings,
+};
 
 const CONFIG_PATH: &str = "./etc/cfg/conf.json";
 
@@ -41,12 +41,12 @@ async fn main() {
     println!("✅ Database connected successfully");
 
     // Initialize the domain layer
-    let domain = domain::init(domain::InitParam {
+    let domain = business::domain::init(business::domain::InitParam {
         db: db_conn.clone(),
     });
 
     // Initialize the usecase layer
-    let usecase = usecase::init(usecase::InitParam {
+    let usecase = business::usecase::init(business::usecase::InitParam {
         domain,
         jwt_secret: app_settings.creds.jwt_secret.clone(),
     });

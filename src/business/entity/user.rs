@@ -2,7 +2,7 @@ use sea_orm::{Condition, IntoActiveModel, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::entity::{
+use crate::business::entity::{
     Filterable,
     util::{Paginatable, PaginationParams},
 };

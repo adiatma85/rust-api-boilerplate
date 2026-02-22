@@ -6,7 +6,7 @@ use axum::{
 };
 use jsonwebtoken::{DecodingKey, Validation, decode};
 
-use crate::{entity::auth::Claims, state::AppState}; // Import your Claims struct
+use crate::{business::entity::auth::Claims, state::AppState}; // Import your Claims struct
 
 // Custom Header extraction helper
 pub async fn auth_middleware(

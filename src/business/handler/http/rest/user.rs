@@ -5,15 +5,17 @@ use axum::{
 };
 
 use crate::{
-    entity::{
-        auth,
-        response::AppCode,
-        user::{
-            CreateUserUseParam, LoginRequest, LoginResponse, RegisterRequest, UserDomParam,
-            UserUseResponse,
+    business::{
+        entity::{
+            auth,
+            response::AppCode,
+            user::{
+                CreateUserUseParam, LoginRequest, LoginResponse, RegisterRequest, UserDomParam,
+                UserUseResponse,
+            },
         },
+        handler::http::middleware::context::RequestContext,
     },
-    handler::http::middleware::context::RequestContext,
     state::AppState,
 };
 

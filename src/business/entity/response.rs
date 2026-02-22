@@ -2,7 +2,7 @@ use axum::{Json, http::StatusCode};
 use chrono::Utc;
 use serde::Serialize;
 
-use crate::entity::error::AppError;
+use crate::business::entity::error::AppError;
 
 // 1. The Main Wrapper
 // We use <T> to mimic "interface{}" or "any"

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use sea_orm::DatabaseConnection;
 
-use crate::domain::{card::CardDomainTrait, user::UserDomainTrait};
+use crate::business::domain::{card::CardDomainTrait, user::UserDomainTrait};
 
 pub mod card;
 pub mod helper;

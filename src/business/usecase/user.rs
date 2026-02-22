@@ -3,12 +3,14 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::{
-    domain::user::UserDomainTrait,
-    entity::{
-        response::{AppCode, Pagination},
-        user::{self, CreateUserDomParam, CreateUserUseParam, UserDomParam, UserUseResponse},
+    business::{
+        domain::user::UserDomainTrait,
+        entity::{
+            response::{AppCode, Pagination},
+            user::{self, CreateUserDomParam, CreateUserUseParam, UserDomParam, UserUseResponse},
+        },
     },
-    helper,
+    helper as crate_helper,
 };
 
 #[async_trait]
@@ -39,7 +41,7 @@ pub fn init(init_param: InitParam) -> impl UserUsecaseTrait {
 #[async_trait]
 impl UserUsecaseTrait for UserUsecase {
     async fn create_user(&self, params: CreateUserUseParam) -> Result<user::Model, AppCode> {
-        let hashed_pwd = helper::hash_password(&params.password).map_err(AppCode::from)?;
+        let hashed_pwd = crate_helper::hash_password(&params.password).map_err(AppCode::from)?;
 
         let repo_params = CreateUserDomParam {
             name: params.name,
@@ -86,7 +88,7 @@ mod tests {
     use sea_orm::prelude::DateTimeUtc;
 
     use super::*;
-    use crate::domain::user::MockUserDomainTrait;
+    use crate::business::domain::user::MockUserDomainTrait;
 
     fn create_test_user() -> user::Model {
         user::Model {

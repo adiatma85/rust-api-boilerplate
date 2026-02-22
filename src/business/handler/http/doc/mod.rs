@@ -3,7 +3,7 @@ use utoipa::{
     openapi::security::{Http, HttpAuthScheme, SecurityScheme},
 };
 
-use crate::entity::{
+use crate::business::entity::{
     card::{CreateCardRequest, UpdateCardStatusRequest},
     user::{LoginRequest, RegisterRequest, UserUseResponse},
 };
@@ -12,21 +12,21 @@ use crate::entity::{
 #[openapi(
     paths(
         // Util
-        crate::handler::http::rest::util::ping_handler,
+        crate::business::handler::http::rest::util::ping_handler,
 
         // Auth Handler
-        crate::handler::http::rest::user::create_user_handler,
-        crate::handler::http::rest::user::login_handler,
+        crate::business::handler::http::rest::user::create_user_handler,
+        crate::business::handler::http::rest::user::login_handler,
 
         // User Handler
-        crate::handler::http::rest::user::get_user_list_handler,
+        crate::business::handler::http::rest::user::get_user_list_handler,
 
         // Card Handler
-        crate::handler::http::rest::card::create_card_handler,
-        crate::handler::http::rest::card::get_card_handler,
-        crate::handler::http::rest::card::get_card_list_handler,
-        crate::handler::http::rest::card::update_card_status_handler,
-        crate::handler::http::rest::card::delete_card_handler,
+        crate::business::handler::http::rest::card::create_card_handler,
+        crate::business::handler::http::rest::card::get_card_handler,
+        crate::business::handler::http::rest::card::get_card_list_handler,
+        crate::business::handler::http::rest::card::update_card_status_handler,
+        crate::business::handler::http::rest::card::delete_card_handler,
     ),
     components(
         schemas(CreateCardRequest, UpdateCardStatusRequest, RegisterRequest, LoginRequest, UserUseResponse)

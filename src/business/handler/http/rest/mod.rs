@@ -10,7 +10,7 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
-    handler::http::{
+    business::handler::http::{
         doc,
         middleware::{auth::auth_middleware, context::context_middleware},
         rest::{
