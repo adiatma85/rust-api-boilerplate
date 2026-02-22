@@ -7,6 +7,7 @@ use argon2::{
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
+use tracing::{debug, error, info};
 
 use crate::business::{
     domain::user::UserDomainTrait,
@@ -38,8 +39,10 @@ pub fn init(param: InitParam) -> impl AuthUsecaseTrait {
 #[async_trait]
 impl AuthUsecaseTrait for AuthUsecase {
     async fn login(&self, params: entity::auth::LoginParams) -> Result<String, AppCode> {
+        debug!("login attempt for email: {}", params.email);
+
         let user_dom_param = crate::business::entity::user::UserDomParam {
-            email_eq: Some(params.email),
+            email_eq: Some(params.email.clone()),
             ..Default::default()
         };
 
@@ -47,15 +50,32 @@ impl AuthUsecaseTrait for AuthUsecase {
             .user_domain
             .get_one(user_dom_param)
             .await
-            .map_err(AppCode::from)?;
+            .map_err(|e| {
+                error!(
+                    "user lookup failed for email: {}, error: {:?}",
+                    params.email, e
+                );
+                AppCode::from(e)
+            })?;
 
-        let parsed_hash =
-            PasswordHash::new(&user_model.hashed_password).map_err(|_| AppCode::Unauthorized)?;
+        let parsed_hash = PasswordHash::new(&user_model.hashed_password).map_err(|e| {
+            error!(
+                "failed to parse password hash for user: {}, error: {}",
+                user_model.email, e
+            );
+            AppCode::Unauthorized
+        })?;
 
         // This could be written in the helper instead in here
         Argon2::default()
             .verify_password(params.password.as_bytes(), &parsed_hash)
-            .map_err(|_| AppCode::Unauthorized)?;
+            .map_err(|_| {
+                error!(
+                    "password verification failed for user: {}",
+                    user_model.email
+                );
+                AppCode::Unauthorized
+            })?;
 
         // C. Generate JWT
         let expiration = Utc::now()
@@ -64,7 +84,7 @@ impl AuthUsecaseTrait for AuthUsecase {
             .timestamp();
 
         let claims = Claims {
-            sub: user_model.email,
+            sub: user_model.email.clone(),
             user_id: user_model.id,
             exp: expiration as usize,
             iat: Utc::now().timestamp() as usize,
@@ -75,8 +95,18 @@ impl AuthUsecaseTrait for AuthUsecase {
             &claims,
             &EncodingKey::from_secret(self.jwt_secret.as_bytes()),
         )
-        .map_err(|_| AppCode::Unauthorized)?;
+        .map_err(|e| {
+            error!(
+                "failed to encode JWT for user: {}, error: {}",
+                user_model.email, e
+            );
+            AppCode::Unauthorized
+        })?;
 
+        info!(
+            "login successful for user: {} (id: {})",
+            user_model.email, user_model.id
+        );
         Ok(token)
     }
 }

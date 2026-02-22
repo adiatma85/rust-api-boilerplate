@@ -37,7 +37,10 @@ pub fn init_route(state: AppState) -> Router {
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api_doc))
         // Mount the v1 router under the "/v1" prefix
         .nest("/api/v1", v1_route)
-        .layer(axum_middleware::from_fn(context_middleware))
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            context_middleware,
+        ))
         .with_state(state)
 }
 
