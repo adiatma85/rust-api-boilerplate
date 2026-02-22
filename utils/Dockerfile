@@ -15,6 +15,9 @@ RUN apk add --no-cache \
     libssl3 \
     ca-certificates
 
+# Create logs directory
+RUN mkdir -p ./logs
+
 # Ensure this matches the output location in the Makefile
 COPY ./build/app ./app
 COPY ./etc/cfg etc/cfg
