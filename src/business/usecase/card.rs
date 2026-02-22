@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use tracing::{debug, error, info};
 
 use crate::business::{
     domain::card::CardDomainTrait,
@@ -43,35 +44,63 @@ pub fn init(param: InitParam) -> impl CardUsecaseTrait {
 #[async_trait]
 impl CardUsecaseTrait for CardUsecase {
     async fn create(&self, create_param: CreateCardUseParam) -> Result<card::Model, AppCode> {
+        debug!(
+            "create card attempt: title={}, user_id={}",
+            create_param.title, create_param.user_id
+        );
+
         let create_dom_param = card::CreateCardDomParam {
-            title: create_param.title,
+            title: create_param.title.clone(),
             description: create_param.description,
             user_id: create_param.user_id,
         };
 
-        let result = self
+        let created_card = self
             .card_domain
             .create(create_dom_param)
             .await
-            .map_err(AppCode::from)?;
+            .map_err(|e| {
+                error!(
+                    "failed to create card: title={}, user_id={}, error: {:?}",
+                    create_param.title, create_param.user_id, e
+                );
+                AppCode::from(e)
+            })?;
 
-        Ok(result)
+        info!(
+            "card created successfully: id={}, title={}",
+            created_card.id, created_card.title
+        );
+        Ok(created_card)
     }
 
     async fn get(&self, param: CardDomParam) -> Result<card::Model, AppCode> {
-        let result = self.card_domain.get(param).await.map_err(AppCode::from)?;
+        let card_id = param.id;
+        debug!("get card request: id={:?}", card_id);
 
-        Ok(result)
+        let card = self.card_domain.get(param).await.map_err(|e| {
+            error!("failed to retrieve card: id={:?}, error: {:?}", card_id, e);
+            AppCode::from(e)
+        })?;
+
+        info!("card retrieved successfully: id={}", card.id);
+        Ok(card)
     }
 
     async fn get_list(&self, param: CardDomParam) -> Result<Vec<card::Model>, AppCode> {
-        let (result, pagination) = self
-            .card_domain
-            .get_list(param)
-            .await
-            .map_err(AppCode::from)?;
+        debug!("get card list request: {:?}", param);
 
-        println!("Total cards: {:?}", pagination);
+        let (result, pagination) = self.card_domain.get_list(param).await.map_err(|e| {
+            error!("failed to retrieve card list: {:?}", e);
+            AppCode::from(e)
+        })?;
+
+        debug!("pagination details: {:?}", pagination);
+
+        info!(
+            "card list retrieved successfully: {} cards (page: {}/{})",
+            pagination.current_elements, pagination.current_page, pagination.total_pages
+        );
 
         Ok(result)
     }
@@ -81,33 +110,50 @@ impl CardUsecaseTrait for CardUsecase {
         update_param: UpdateCardUseParam,
         select_param: CardDomParam,
     ) -> Result<card::Model, AppCode> {
+        let card_id = select_param.id;
+        let status = update_param.status.clone();
+
+        debug!("update card attempt: id={:?}, status={}", card_id, status);
+
         let update_dom_param = card::CardDomUpdateParam {
-            card_status: Some(update_param.status),
+            card_status: Some(status.clone()),
             ..Default::default()
         };
 
-        let result = self
+        let updated_card = self
             .card_domain
             .update_one(select_param, update_dom_param)
             .await
-            .map_err(AppCode::from)?;
+            .map_err(|e| {
+                error!(
+                    "failed to update card: id={:?}, status={}, error: {:?}",
+                    card_id, status, e
+                );
+                AppCode::from(e)
+            })?;
 
-        Ok(result)
+        info!(
+            "card updated successfully: id={}, new_status={}",
+            updated_card.id, updated_card.card_status
+        );
+        Ok(updated_card)
     }
 
     async fn delete_one(&self, param: CardDomParam) -> Result<card::Model, AppCode> {
+        debug!("delete card attempt: id={:?}", param.id);
+
         let dom_param = card::CardDomParam {
             id: param.id,
             ..Default::default()
         };
 
-        let result = self
-            .card_domain
-            .delete_one(dom_param)
-            .await
-            .map_err(AppCode::from)?;
+        let deleted_card = self.card_domain.delete_one(dom_param).await.map_err(|e| {
+            error!("failed to delete card: id={:?}, error: {:?}", param.id, e);
+            AppCode::from(e)
+        })?;
 
-        Ok(result)
+        info!("card deleted successfully: id={}", deleted_card.id);
+        Ok(deleted_card)
     }
 }
 
