@@ -41,7 +41,8 @@ pub fn init(init_param: InitParam) -> impl UserUsecaseTrait {
 #[async_trait]
 impl UserUsecaseTrait for UserUsecase {
     async fn create_user(&self, params: CreateUserUseParam) -> Result<user::Model, AppCode> {
-        let hashed_pwd = crate_helper::hash_password(&params.password).map_err(AppCode::from)?;
+        let hashed_pwd =
+            crate_helper::password::hash_password(&params.password).map_err(AppCode::from)?;
 
         let repo_params = CreateUserDomParam {
             name: params.name,
