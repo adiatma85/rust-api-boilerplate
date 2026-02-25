@@ -2,6 +2,7 @@ use sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, FromQueryResult, IntoActiveModel,
     PaginatorTrait, QueryFilter,
 };
+use tracing::{debug, error, info};
 
 use crate::business::entity::{Filterable, Updatable, response::Pagination, util::Paginatable};
 
@@ -20,6 +21,8 @@ where
     M: FromQueryResult + Sized + Send + Sync,
     F: Filterable + Paginatable, // We now require the Paginatable trait
 {
+    debug!("fetch_list query: entity={}", std::any::type_name::<E>());
+
     // 1. Build Condition
     let condition = filter.to_condition();
 
@@ -30,7 +33,14 @@ where
     if filter.is_limit_disabled() {
         // --- BRANCH A: FETCH ALL ---
 
-        let data = query.all(db).await?;
+        let data = query.all(db).await.map_err(|e| {
+            error!(
+                "fetch_list failed (unlimited): entity={}, error={:?}",
+                std::any::type_name::<E>(),
+                e
+            );
+            e
+        })?;
         let total_elements = data.len() as u64;
 
         let pagination = Pagination {
@@ -40,6 +50,12 @@ where
             total_elements,
             sort_by: vec![],
         };
+
+        info!(
+            "fetch_list success (unlimited): entity={}, count={}",
+            std::any::type_name::<E>(),
+            total_elements
+        );
 
         Ok((data, pagination))
     } else {
@@ -53,8 +69,22 @@ where
 
         let paginator = query.paginate(db, safe_limit);
 
-        let total_elements = paginator.num_items().await?;
-        let data = paginator.fetch_page(page).await?;
+        let total_elements = paginator.num_items().await.map_err(|e| {
+            error!(
+                "fetch_list count failed: entity={}, error={:?}",
+                std::any::type_name::<E>(),
+                e
+            );
+            e
+        })?;
+        let data = paginator.fetch_page(page).await.map_err(|e| {
+            error!(
+                "fetch_list fetch failed: entity={}, error={:?}",
+                std::any::type_name::<E>(),
+                e
+            );
+            e
+        })?;
 
         // Optimization: Manual calc
         let total_pages = total_elements.div_ceil(safe_limit);
@@ -67,6 +97,15 @@ where
             sort_by: vec![],
         };
 
+        info!(
+            "fetch_list success (paginated): entity={}, page={}/{}, count={}, total={}",
+            std::any::type_name::<E>(),
+            page + 1,
+            total_pages,
+            data.len(),
+            total_elements
+        );
+
         Ok((data, pagination))
     }
 }
@@ -78,19 +117,34 @@ where
     M: FromQueryResult + Sized + Send + Sync,
     F: Filterable,
 {
+    debug!("fetch_one query: entity={}", std::any::type_name::<E>());
+
     // 1. Build Condition
     let condition = filter.to_condition();
 
     // 2. Execute Query
     // .one() returns Result<Option<M>, DbErr>
-    let result = E::find().filter(condition).one(db).await?;
+    let result = E::find().filter(condition).one(db).await.map_err(|e| {
+        error!(
+            "fetch_one failed: entity={}, error={:?}",
+            std::any::type_name::<E>(),
+            e
+        );
+        e
+    })?;
 
     // 3. Handle "Not Found" manually
     match result {
-        Some(model) => Ok(model),
-        None => Err(sea_orm::DbErr::RecordNotFound(
-            "Record not found".to_string(),
-        )),
+        Some(model) => {
+            info!("fetch_one success: entity={}", std::any::type_name::<E>());
+            Ok(model)
+        }
+        None => {
+            error!("fetch_one not found: entity={}", std::any::type_name::<E>());
+            Err(sea_orm::DbErr::RecordNotFound(
+                "Record not found".to_string(),
+            ))
+        }
     }
 }
 
@@ -106,13 +160,27 @@ where
     M: FromQueryResult + Sized + Send + Sync + IntoActiveModel<A>,
     D: IntoActiveModel<A>, // <--- Constraint: The Param must be convertible to ActiveModel
 {
+    debug!("create_one query: entity={}", std::any::type_name::<E>());
+
     // 1. Convert DTO to ActiveModel
     let active_model = data.into_active_model();
 
     // 2. Insert and return the Model in one go
     // Note: exec_with_returning works natively on Postgres.
     // On MySQL/SQLite, SeaORM emulates this by doing Insert + Select automatically.
-    let result = E::insert(active_model).exec_with_returning(db).await?;
+    let result = E::insert(active_model)
+        .exec_with_returning(db)
+        .await
+        .map_err(|e| {
+            error!(
+                "create_one failed: entity={}, error={:?}",
+                std::any::type_name::<E>(),
+                e
+            );
+            e
+        })?;
+
+    info!("create_one success: entity={}", std::any::type_name::<E>());
 
     Ok(result)
 }
@@ -135,12 +203,22 @@ where
     F: Filterable,
     U: Updatable<A>, // <--- Constraint: The Data must know how to update the ActiveModel
 {
+    debug!("update_one query: entity={}", std::any::type_name::<E>());
+
     // 1. Find the existing record
     // We reuse the logic of "fetch_one" inline here
     let model = E::find()
         .filter(filter.to_condition())
         .one(db)
-        .await?
+        .await
+        .map_err(|e| {
+            error!(
+                "update_one find failed: entity={}, error={:?}",
+                std::any::type_name::<E>(),
+                e
+            );
+            e
+        })?
         .ok_or(sea_orm::DbErr::RecordNotFound(
             "Record not found".to_string(),
         ))?;
@@ -153,7 +231,16 @@ where
 
     // 4. Execute the update and return the fresh Model
     // SeaORM's update().exec() automatically returns the updated Model
-    let updated_model = E::update(active_model).exec(db).await?;
+    let updated_model = E::update(active_model).exec(db).await.map_err(|e| {
+        error!(
+            "update_one exec failed: entity={}, error={:?}",
+            std::any::type_name::<E>(),
+            e
+        );
+        e
+    })?;
+
+    info!("update_one success: entity={}", std::any::type_name::<E>());
 
     Ok(updated_model)
 }
@@ -172,6 +259,8 @@ where
     F: Filterable,
     D: IntoActiveModel<A>, // DTO must convert to a "Partial" ActiveModel
 {
+    debug!("update_many query: entity={}", std::any::type_name::<E>());
+
     // 1. Build Condition (WHERE ...)
     let condition = filter.to_condition();
 
@@ -184,7 +273,21 @@ where
         .set(active_model)
         .filter(condition)
         .exec(db)
-        .await?;
+        .await
+        .map_err(|e| {
+            error!(
+                "update_many failed: entity={}, error={:?}",
+                std::any::type_name::<E>(),
+                e
+            );
+            e
+        })?;
+
+    info!(
+        "update_many success: entity={}, rows_affected={}",
+        std::any::type_name::<E>(),
+        res.rows_affected
+    );
 
     Ok(res.rows_affected)
 }
@@ -196,11 +299,21 @@ where
     M: FromQueryResult + Sized + Send + Sync + IntoActiveModel<A> + Clone,
     F: Filterable,
 {
+    debug!("delete_one query: entity={}", std::any::type_name::<E>());
+
     // 1. Find the existing record
     let model = E::find()
         .filter(filter.to_condition())
         .one(db)
-        .await?
+        .await
+        .map_err(|e| {
+            error!(
+                "delete_one find failed: entity={}, error={:?}",
+                std::any::type_name::<E>(),
+                e
+            );
+            e
+        })?
         .ok_or(sea_orm::DbErr::RecordNotFound(
             "Record not found".to_string(),
         ))?;
@@ -211,7 +324,16 @@ where
 
     // 3. Delete
     // SeaORM uses the Primary Key inside the ActiveModel to delete the specific row
-    E::delete(active_model).exec(db).await?;
+    E::delete(active_model).exec(db).await.map_err(|e| {
+        error!(
+            "delete_one exec failed: entity={}, error={:?}",
+            std::any::type_name::<E>(),
+            e
+        );
+        e
+    })?;
+
+    info!("delete_one success: entity={}", std::any::type_name::<E>());
 
     // 4. Return the data of the deleted record
     Ok(model)

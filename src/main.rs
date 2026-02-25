@@ -8,10 +8,7 @@ use std::{net::SocketAddr, sync::Arc};
 use sea_orm::Database;
 use tokio::signal;
 
-use crate::{
-    business::{domain, handler::http::rest},
-    config::app_settings::AppSettings,
-};
+use crate::{business::handler::http::rest, config::app_settings::AppSettings};
 
 const CONFIG_PATH: &str = "./etc/cfg/conf.json";
 
