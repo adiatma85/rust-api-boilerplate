@@ -43,3 +43,6 @@ Thumbs.db
 # Ignore the secrets
 # This will be shared with another developer
 .secrets/
+
+# Logs directory
+/logs/

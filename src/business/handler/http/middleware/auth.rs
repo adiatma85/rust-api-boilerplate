@@ -6,7 +6,7 @@ use axum::{
 };
 use jsonwebtoken::{DecodingKey, Validation, decode};
 
-use crate::{entity::auth::Claims, state::AppState}; // Import your Claims struct
+use crate::{business::entity::auth::Claims, state::AppState}; // Import your Claims struct
 
 // Custom Header extraction helper
 pub async fn auth_middleware(
@@ -44,6 +44,7 @@ pub async fn auth_middleware(
 
     // 4. Inject the User Data (Claims) into the Request
     // This allows handlers downstream to say: Extension(claims): Extension<Claims>
+    tracing::Span::current().record("user_id", token_data.claims.user_id);
     req.extensions_mut().insert(token_data.claims);
 
     // 5. Continue to the next handler

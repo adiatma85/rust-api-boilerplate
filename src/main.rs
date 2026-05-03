@@ -1,17 +1,14 @@
+mod business;
 mod config;
-mod domain;
-mod entity;
-mod handler;
 mod helper;
 mod state;
-mod usecase;
 
 use std::{net::SocketAddr, sync::Arc};
 
 use sea_orm::Database;
 use tokio::signal;
 
-use crate::{config::app_settings::AppSettings, handler::http::rest};
+use crate::{business::handler::http::rest, config::app_settings::AppSettings};
 
 const CONFIG_PATH: &str = "./etc/cfg/conf.json";
 
@@ -19,6 +16,8 @@ const CONFIG_PATH: &str = "./etc/cfg/conf.json";
 
 #[tokio::main]
 async fn main() {
+    helper::logger::init_logger();
+
     let app_settings = match AppSettings::new(CONFIG_PATH) {
         Ok(settings) => settings,
         Err(err) => {
@@ -38,15 +37,15 @@ async fn main() {
 
     let db_conn = Arc::new(db);
 
-    println!("✅ Database connected successfully");
+    tracing::info!("Database connected successfully");
 
     // Initialize the domain layer
-    let domain = domain::init(domain::InitParam {
+    let domain = business::domain::init(business::domain::InitParam {
         db: db_conn.clone(),
     });
 
     // Initialize the usecase layer
-    let usecase = usecase::init(usecase::InitParam {
+    let usecase = business::usecase::init(business::usecase::InitParam {
         domain,
         jwt_secret: app_settings.creds.jwt_secret.clone(),
     });
@@ -54,6 +53,7 @@ async fn main() {
     // 3. Create the State
     let state = state::AppState::new(state::AppStateInitParam {
         secret_key: app_settings.creds.jwt_secret,
+        service_version: app_settings.app_metadata.version.clone(),
         usecase,
     });
 
@@ -61,7 +61,7 @@ async fn main() {
     let app = rest::init_route(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], app_settings.app_metadata.port));
-    println!("🚀 Server listening on http://{}", addr);
+    tracing::info!("Server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app)
@@ -103,5 +103,5 @@ async fn shutdown_signal() {
         _ = terminate => {},
     }
 
-    println!("\n🛑 Signal received, stopping web server...");
+    tracing::info!("Signal received, stopping web server...");
 }

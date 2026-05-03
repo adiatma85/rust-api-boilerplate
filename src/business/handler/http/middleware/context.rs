@@ -1,14 +1,18 @@
 use std::time::Instant;
 
 use axum::{
-    extract::Request,
+    extract::{Request, State},
     middleware::Next,
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
+use tracing::{Instrument, field, info_span};
 use uuid::Uuid;
 
-use crate::entity::response::{ApiResponse, AppCode, Pagination};
+use crate::{
+    business::entity::response::{ApiResponse, AppCode, Pagination},
+    state::AppState,
+};
 
 // Define a struct to hold our "Request Context"
 #[derive(Clone)]
@@ -55,24 +59,38 @@ impl RequestContext {
     }
 }
 
-pub async fn context_middleware(mut req: Request, next: Next) -> Response {
-    // 1. Generate ID and Start Timer
+pub async fn context_middleware(
+    State(state): State<AppState>,
+    mut req: Request,
+    next: Next,
+) -> Response {
     let request_id = Uuid::new_v4().to_string();
     let start_time = Instant::now();
     let method = req.method().to_string();
     let path = req.uri().path().to_string();
+    let user_agent = req
+        .headers()
+        .get("user-agent")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
 
     let ctx = RequestContext {
-        request_id,
+        request_id: request_id.clone(),
         start_time,
         path,
         method,
     };
 
-    // 2. Insert into Request Extensions
-    // This allows the Handler to retrieve it later using "Extension<RequestContext>"
     req.extensions_mut().insert(ctx);
 
-    // 3. Call the next handler
-    next.run(req).await
+    let span = info_span!(
+        "request",
+        request_id = %request_id,
+        user_agent = %user_agent,
+        user_id = field::Empty,
+        service_version = %state.service_version,
+    );
+
+    next.run(req).instrument(span).await
 }
