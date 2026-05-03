@@ -50,7 +50,7 @@ jobs:
 
       # 4. Versioning (AUTOMATED)
       - name: Calculate Next Version
-        uses: paulhatch/semantic-version@a8f8f59fd7f0625188492e945240f12d7ad2dca3 # ratchet:paulhatch/semantic-version@v5.4.0
+        uses: paulhatch/semantic-version@9f72830310d5ed81233b641ee59253644cd8a8fc # v6.0.2
         id: bump-semver
         with:
           version_format: "v${major}.${minor}.${patch}"
@@ -74,7 +74,7 @@ jobs:
 
       # 6. Docker Build & Push
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # ratchet:docker/login-action@v3
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -153,7 +153,7 @@ jobs:
 
       # 8. Create Release
       - name: Create Release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # ratchet:softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
         with:
           tag_name: ${{ steps.bump-semver.outputs.version }}
           name: ${{ steps.bump-semver.outputs.version }}
