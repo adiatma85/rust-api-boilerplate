@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # ratchet:actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -81,7 +81,7 @@ jobs:
 
       # 4. Versioning
       - name: Generate New Bumped Version
-        uses: paulhatch/semantic-version@a8f8f59fd7f0625188492e945240f12d7ad2dca3 # ratchet:paulhatch/semantic-version@v5.4.0
+        uses: paulhatch/semantic-version@502226b17e3e242e4befd0a45690fcbb27dd1373 # v6.0.3
         id: bump-semver
         with:
           version_format: "v${major}.${minor}.${patch}-rc.${increment}"
@@ -104,7 +104,7 @@ jobs:
 
       # 6. Docker Build & Push
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # ratchet:docker/login-action@v3
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -185,7 +185,7 @@ jobs:
 
       # 8. Create Release
       - name: Create Release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # ratchet:softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ steps.bump-semver.outputs.version }}
           name: ${{ steps.bump-semver.outputs.new_version }}
